@@ -12,11 +12,12 @@ class Base(DeclarativeBase):
 
 
 async def create_all_tables() -> None:
-    """Create all SQLAlchemy-mapped tables if they do not yet exist."""
+    """Create all SQLAlchemy-mapped tables. For MVP development, we drop and recreate."""
     # Import models here so their metadata is registered on Base before create_all.
     import app.models.manuscript  # noqa: F401
 
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
 

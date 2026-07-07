@@ -2,9 +2,9 @@
 IBM watsonx.ai Granite extraction service.
 
 Takes NLU results and raw chapter text, calls Granite-3-8b-Instruct with a
-structured-output prompt, and returns a list of CharacterObject instances.
+structured-output prompt, and returns extracted characters, world-states, and threads.
 
-When settings.mock_ai is True, returns a deterministic stub.
+When settings.mock_ai is True, returns deterministic stubs.
 """
 
 from __future__ import annotations
@@ -42,35 +42,47 @@ Chapter text (first 3000 chars):
 Output ONLY the JSON array, no prose.
 """
 
-# ---------------------------------------------------------------------------
-# Stub
-# ---------------------------------------------------------------------------
+_WORLD_STATE_PROMPT = """\
+You are a story analysis assistant.
 
-_STUB_CHARACTERS = [
-    CharacterObject(
-        id="char_001",
-        name="Elena Voss",
-        aliases=["Ellie"],
-        first_appearance="chapter_01",
-        status_by_chapter={"chapter_01": "alive"},
-        relationships=[
-            CharacterRelationship(target_id="char_002", type="sibling", sentiment="hostile")
-        ],
-        extracted_by="stub",
-    ),
-    CharacterObject(
-        id="char_002",
-        name="Marcus Rey",
-        aliases=[],
-        first_appearance="chapter_01",
-        status_by_chapter={"chapter_01": "alive"},
-        relationships=[
-            CharacterRelationship(target_id="char_001", type="sibling", sentiment="hostile")
-        ],
-        extracted_by="stub",
-    ),
+Given the chapter text and NLU findings, extract the world state of the chapter.
+Output a JSON object following this exact schema:
+{{
+  "chapter_id": "{chapter_id}",
+  "characters_present": ["<char_id_1>", "<char_id_2>"],
+  "locations": ["<location_name>"],
+  "faction_control": {{"<location_name>": "<status_or_controlling_faction>"}},
+  "key_objects": ["<object_name>"],
+  "events": ["<brief_event_description>"],
+  "extracted_by": "watsonx.granite-3-8b-instruct"
+}}
+
+NLU entities: {nlu_entities}
+Chapter text (first 3000 chars):
+{chapter_text}
+
+Output ONLY the JSON object, no prose.
+"""
+
+_THREADS_PROMPT = """\
+You are a story analysis assistant.
+
+Identify narrative elements planted in this chapter: introduced objects (Chekhov's guns), promises made, unanswered questions, or foreshadowing statements.
+Output a JSON array of thread objects, each following this exact schema:
+[
+  {{
+    "type": "chekhov_gun|promise|foreshadowing|question",
+    "introduced_chapter": "{chapter_id}",
+    "description": "<detailed description of the element>",
+    "resolved": false
+  }}
 ]
 
+Chapter text (first 3000 chars):
+{chapter_text}
+
+Output ONLY the JSON array, no prose.
+"""
 
 # ---------------------------------------------------------------------------
 # Public interface
@@ -83,14 +95,37 @@ def extract_characters(
 ) -> list[CharacterObject]:
     """Return CharacterObject list for a chapter. Uses stub when MOCK_AI=true."""
     if settings.mock_ai:
-        # Tag stub characters with the correct chapter
-        tagged = []
-        for i, char in enumerate(_STUB_CHARACTERS):
-            c = char.model_copy(deep=True)
-            c.first_appearance = chapter_id
-            c.status_by_chapter = {chapter_id: "alive"}
-            tagged.append(c)
-        return tagged
+        c1 = CharacterObject(
+            id="char_001",
+            name="Elena Voss",
+            aliases=["Ellie"],
+            first_appearance=chapter_id,
+            status_by_chapter={chapter_id: "alive"},
+            relationships=[
+                CharacterRelationship(target_id="char_002", type="sibling", sentiment="hostile")
+            ],
+            extracted_by="stub",
+        )
+        c2 = CharacterObject(
+            id="char_002",
+            name="Marcus Rey",
+            aliases=[],
+            first_appearance=chapter_id,
+            status_by_chapter={chapter_id: "alive"},
+            relationships=[
+                CharacterRelationship(target_id="char_001", type="sibling", sentiment="hostile")
+            ],
+            extracted_by="stub",
+        )
+
+        if "chapter_02" in chapter_id or "Scene 2" in chapter_id:
+            c1.status_by_chapter[chapter_id] = "deceased"
+            return [c1, c2]
+        elif "chapter_03" in chapter_id or "Scene 3" in chapter_id:
+            c1.status_by_chapter[chapter_id] = "alive"
+            return [c1, c2]
+        else:
+            return [c1, c2]
 
     from ibm_watsonx_ai import Credentials
     from ibm_watsonx_ai.foundation_models import ModelInference
@@ -116,16 +151,159 @@ def extract_characters(
     return _parse_granite_response(raw_response, chapter_id)
 
 
+def extract_world_state(
+    chapter_id: str,
+    chapter_text: str,
+    nlu_result: NLUResult,
+) -> dict:
+    """Extract world-state for a chapter. Uses stub when MOCK_AI=true."""
+    if settings.mock_ai:
+        if "chapter_02" in chapter_id or "Scene 2" in chapter_id:
+            return {
+                "chapter_id": chapter_id,
+                "characters_present": ["char_001"],
+                "locations": ["kingdom_of_varen"],
+                "faction_control": {
+                    "kingdom_of_varen": "destroyed"
+                },
+                "key_objects": ["locked_chest"],
+                "events": ["kingdom_attacked"],
+                "extracted_by": "stub"
+            }
+        elif "chapter_03" in chapter_id or "Scene 3" in chapter_id:
+            return {
+                "chapter_id": chapter_id,
+                "characters_present": ["char_001", "char_002"],
+                "locations": ["kingdom_of_varen"],
+                "faction_control": {
+                    "kingdom_of_varen": "active"
+                },
+                "key_objects": ["ancient_sword"],
+                "events": ["sword_used"],
+                "extracted_by": "stub"
+            }
+        else:
+            return {
+                "chapter_id": chapter_id,
+                "characters_present": ["char_001", "char_002"],
+                "locations": ["kingdom_of_varen"],
+                "faction_control": {
+                    "kingdom_of_varen": "active"
+                },
+                "key_objects": ["ancient_sword", "locked_chest"],
+                "events": ["sword_found"],
+                "extracted_by": "stub"
+            }
+
+    from ibm_watsonx_ai import Credentials
+    from ibm_watsonx_ai.foundation_models import ModelInference
+
+    credentials = Credentials(
+        url=settings.watsonx_url,
+        api_key=settings.watsonx_api_key,
+    )
+    model = ModelInference(
+        model_id=GRANITE_MODEL_ID,
+        credentials=credentials,
+        project_id=settings.watsonx_project_id,
+        params={"max_new_tokens": 1024, "temperature": 0},
+    )
+
+    prompt = _WORLD_STATE_PROMPT.format(
+        chapter_id=chapter_id,
+        nlu_entities=json.dumps(nlu_result.entities[:20]),
+        chapter_text=chapter_text[:3000],
+    )
+
+    raw_response = model.generate_text(prompt=prompt)
+    return _parse_json_object(raw_response)
+
+
+def extract_threads(
+    chapter_id: str,
+    chapter_text: str,
+) -> list[dict]:
+    """Extract narrative threads planted in a chapter. Uses stub when MOCK_AI=true."""
+    if settings.mock_ai:
+        if "chapter_02" in chapter_id or "Scene 2" in chapter_id:
+            return []
+        elif "chapter_03" in chapter_id or "Scene 3" in chapter_id:
+            return [
+                {
+                    "type": "promise",
+                    "introduced_chapter": chapter_id,
+                    "description": "Elena promises Marcus she will return before sunset",
+                    "resolved": False
+                }
+            ]
+        else:
+            return [
+                {
+                    "type": "chekhov_gun",
+                    "introduced_chapter": chapter_id,
+                    "description": "Locked chest given to protagonist, never opened",
+                    "resolved": False
+                }
+            ]
+
+    from ibm_watsonx_ai import Credentials
+    from ibm_watsonx_ai.foundation_models import ModelInference
+
+    credentials = Credentials(
+        url=settings.watsonx_url,
+        api_key=settings.watsonx_api_key,
+    )
+    model = ModelInference(
+        model_id=GRANITE_MODEL_ID,
+        credentials=credentials,
+        project_id=settings.watsonx_project_id,
+        params={"max_new_tokens": 1024, "temperature": 0},
+    )
+
+    prompt = _THREADS_PROMPT.format(
+        chapter_id=chapter_id,
+        chapter_text=chapter_text[:3000],
+    )
+
+    raw_response = model.generate_text(prompt=prompt)
+    return _parse_json_array(raw_response)
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
 def _parse_granite_response(raw: str, chapter_id: str) -> list[CharacterObject]:
     """Extract a JSON array from Granite's free-text response."""
-    # Strip any markdown code fences Granite might add
     cleaned = re.sub(r"```(?:json)?", "", raw).strip()
-    # Find the first '[' ... ']' block
     match = re.search(r"\[.*\]", cleaned, re.DOTALL)
     if not match:
         return []
     try:
         data = json.loads(match.group(0))
         return [CharacterObject(**item) for item in data if isinstance(item, dict)]
+    except (json.JSONDecodeError, ValueError):
+        return []
+
+
+def _parse_json_object(raw: str) -> dict:
+    cleaned = re.sub(r"```(?:json)?", "", raw).strip()
+    match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+    if not match:
+        return {}
+    try:
+        return json.loads(match.group(0))
+    except (json.JSONDecodeError, ValueError):
+        return {}
+
+
+def _parse_json_array(raw: str) -> list[dict]:
+    cleaned = re.sub(r"```(?:json)?", "", raw).strip()
+    match = re.search(r"\[.*\]", cleaned, re.DOTALL)
+    if not match:
+        return []
+    try:
+        data = json.loads(match.group(0))
+        return [item for item in data if isinstance(item, dict)]
     except (json.JSONDecodeError, ValueError):
         return []

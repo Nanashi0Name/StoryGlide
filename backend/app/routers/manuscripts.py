@@ -83,6 +83,57 @@ async def get_characters(
     return {"manuscript_id": manuscript.id, "characters": manuscript.get_characters()}
 
 
+@router.get("/manuscripts/{manuscript_id}/contradictions")
+async def get_contradictions(
+    manuscript_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the contradiction flags (available when status is 'done')."""
+    manuscript = await _fetch_or_404(db, manuscript_id)
+    if manuscript.status != "done":
+        raise HTTPException(
+            status_code=202,
+            detail=f"Processing not complete yet. Current status: {manuscript.status}",
+        )
+    return {"manuscript_id": manuscript.id, "contradictions": manuscript.get_contradictions()}
+
+
+@router.get("/manuscripts/{manuscript_id}/threads")
+async def get_threads(
+    manuscript_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the unresolved thread list (available when status is 'done')."""
+    manuscript = await _fetch_or_404(db, manuscript_id)
+    if manuscript.status != "done":
+        raise HTTPException(
+            status_code=202,
+            detail=f"Processing not complete yet. Current status: {manuscript.status}",
+        )
+    return {"manuscript_id": manuscript.id, "threads": manuscript.get_threads()}
+
+
+@router.get("/manuscripts/{manuscript_id}/arc")
+async def get_arc(
+    manuscript_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return emotional arc data (stub)."""
+    return {"manuscript_id": manuscript_id, "arc": []}
+
+
+@router.post("/manuscripts/{manuscript_id}/whatif")
+async def run_whatif(
+    manuscript_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Run what-if exploration (stub)."""
+    return {
+        "summary": "This is a mock narrative sketch of the alternate path.",
+        "downstream_impacts": []
+    }
+
+
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------

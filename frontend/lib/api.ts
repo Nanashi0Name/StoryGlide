@@ -35,6 +35,33 @@ export interface CharacterObject {
   extracted_by: string;
 }
 
+export interface ContradictionFlag {
+  id: string;
+  type: string;
+  entity: string;
+  conflicting_chapters: string[];
+  description: string;
+  confidence: number;
+}
+
+export interface ContradictionsResponse {
+  manuscript_id: string;
+  contradictions: ContradictionFlag[];
+}
+
+export interface UnresolvedThread {
+  id: string;
+  type: string;
+  introduced_chapter: string;
+  description: string;
+  resolved: boolean;
+}
+
+export interface ThreadsResponse {
+  manuscript_id: string;
+  threads: UnresolvedThread[];
+}
+
 export async function uploadManuscript(file: File): Promise<UploadResponse> {
   const form = new FormData();
   form.append("file", file);
@@ -60,5 +87,17 @@ export async function pollStatus(manuscriptId: string): Promise<StatusResponse> 
 export async function fetchCharacters(manuscriptId: string): Promise<CharactersResponse> {
   const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/characters`);
   if (!res.ok) throw new Error(`Characters fetch failed (${res.status})`);
+  return res.json();
+}
+
+export async function fetchContradictions(manuscriptId: string): Promise<ContradictionsResponse> {
+  const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/contradictions`);
+  if (!res.ok) throw new Error(`Contradictions fetch failed (${res.status})`);
+  return res.json();
+}
+
+export async function fetchThreads(manuscriptId: string): Promise<ThreadsResponse> {
+  const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/threads`);
+  if (!res.ok) throw new Error(`Threads fetch failed (${res.status})`);
   return res.json();
 }

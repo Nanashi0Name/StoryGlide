@@ -58,30 +58,78 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
             manuscript.status = "extracting"
             await db.commit()
 
-            all_characters: dict[str, CharacterObject] = {}
+            from sqlalchemy import select
+            from app.services import contradiction_engine, thread_tracker
 
-            for chunk in chunks:
-                nlu_result = nlu_extractor.extract(chunk.text)
+            result = await db.execute(
+                select(Chapter).where(Chapter.manuscript_id == manuscript_id)
+            )
+            db_chapters = list(result.scalars().all())
+            db_chapters = sorted(db_chapters, key=lambda c: contradiction_engine.get_chapter_sort_key(c.chapter_id))
+
+            all_characters: dict[str, CharacterObject] = {}
+            all_extracted_threads: list[dict] = []
+            chapters_data: list[dict] = []
+
+            for ch in db_chapters:
+                nlu_result = nlu_extractor.extract(ch.text)
+                
+                # Extract characters
                 chapter_chars = granite_extractor.extract_characters(
-                    chapter_id=chunk.chapter_id,
-                    chapter_text=chunk.text,
+                    chapter_id=ch.chapter_id,
+                    chapter_text=ch.text,
                     nlu_result=nlu_result,
                 )
                 for char in chapter_chars:
                     if char.id in all_characters:
-                        # Merge: add chapter status entry for returning character
                         existing = all_characters[char.id]
                         existing.status_by_chapter.update(char.status_by_chapter)
                     else:
                         all_characters[char.id] = char
 
-            # Persist merged character list as JSON blob
-            manuscript.set_characters(
-                [c.model_dump_api() for c in all_characters.values()]
+                # Extract world state
+                world_state = granite_extractor.extract_world_state(
+                    chapter_id=ch.chapter_id,
+                    chapter_text=ch.text,
+                    nlu_result=nlu_result,
+                )
+                ch.set_world_state(world_state)
+
+                # Extract threads
+                threads = granite_extractor.extract_threads(
+                    chapter_id=ch.chapter_id,
+                    chapter_text=ch.text,
+                )
+                all_extracted_threads.extend(threads)
+
+                chapters_data.append({
+                    "chapter_id": ch.chapter_id,
+                    "title": ch.title,
+                    "text": ch.text,
+                    "world_state": world_state
+                })
+
+            # Run contradiction and unresolved thread trackers
+            char_list = [c.model_dump_api() for c in all_characters.values()]
+            
+            contradictions = contradiction_engine.detect_contradictions(
+                characters=char_list,
+                chapters=chapters_data,
             )
+            
+            threads_status = thread_tracker.track_threads(
+                all_extracted_threads=all_extracted_threads,
+                chapters=chapters_data,
+            )
+
+            # Persist results
+            manuscript.set_characters(char_list)
+            manuscript.set_contradictions(contradictions)
+            manuscript.set_threads(threads_status)
             manuscript.status = "done"
             await db.commit()
-            logger.info("Pipeline: manuscript %s completed (%d characters)", manuscript_id, len(all_characters))
+            logger.info("Pipeline: manuscript %s completed (%d characters, %d contradictions, %d threads)", 
+                        manuscript_id, len(all_characters), len(contradictions), len(threads_status))
 
         except Exception as exc:  # noqa: BLE001
             logger.exception("Pipeline: manuscript %s failed", manuscript_id)
