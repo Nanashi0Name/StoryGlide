@@ -16,8 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import AsyncSessionLocal
 from app.models.character import CharacterObject
 from app.models.manuscript import Chapter, Manuscript
-from app.services import chunker as chunker_svc
-from app.services import granite_extractor, nlu_extractor
+from app.services import arc_scorer, chunker as chunker_svc
+from app.services import granite_extractor, nlu_extractor, whatif_generator
 
 logger = logging.getLogger(__name__)
 
@@ -123,14 +123,23 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                 chapters=chapters_data,
             )
 
+            # Score emotional arc
+            arc_data = arc_scorer.score_arc(chapters_data)
+
+            # Build Chroma vector store for what-if retrieval
+            whatif_generator.embed_manuscript(manuscript_id, chapters_data)
+
             # Persist results
             manuscript.set_characters(char_list)
             manuscript.set_contradictions(contradictions)
             manuscript.set_threads(threads_status)
+            manuscript.set_arc(arc_data)
             manuscript.status = "done"
             await db.commit()
-            logger.info("Pipeline: manuscript %s completed (%d characters, %d contradictions, %d threads)", 
-                        manuscript_id, len(all_characters), len(contradictions), len(threads_status))
+            logger.info(
+                "Pipeline: manuscript %s completed (%d characters, %d contradictions, %d threads, %d arc points)",
+                manuscript_id, len(all_characters), len(contradictions), len(threads_status), len(arc_data),
+            )
 
         except Exception as exc:  # noqa: BLE001
             logger.exception("Pipeline: manuscript %s failed", manuscript_id)

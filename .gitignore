@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+*.egg-info/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.tsbuildinfo
+
+# Databases and vector stores
+*.db
+*.db-shm
+*.db-wal
+chroma_store/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.local.example
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Lock files - judges run: npm install / pip install -r requirements.txt
+package-lock.json

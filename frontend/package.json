@@ -10,8 +10,20 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@types/cytoscape": "^3.21.9",
+    "@types/react-cytoscapejs": "^1.2.6",
+    "@visx/axis": "^4.0.0",
+    "@visx/gradient": "^4.0.0",
+    "@visx/grid": "^4.0.0",
+    "@visx/group": "^4.0.0",
+    "@visx/responsive": "^4.0.0",
+    "@visx/scale": "^4.0.0",
+    "@visx/shape": "^4.0.0",
+    "@visx/tooltip": "^4.0.0",
+    "cytoscape": "^3.34.0",
     "next": "14.2.4",
     "react": "^18",
+    "react-cytoscapejs": "^2.0.0",
     "react-dom": "^18"
   },
   "devDependencies": {

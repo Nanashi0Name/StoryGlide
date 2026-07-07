@@ -62,6 +62,35 @@ export interface ThreadsResponse {
   threads: UnresolvedThread[];
 }
 
+export interface ArcDataPoint {
+  chapter_id: string;
+  tension_score: number;
+  sentiment: string;
+  dominant_emotion: string;
+  word_count: number;
+}
+
+export interface ArcResponse {
+  manuscript_id: string;
+  arc: ArcDataPoint[];
+}
+
+export interface WhatIfRequest {
+  scope: "character_death" | "relationship_change" | "event_removal";
+  target_id: string;
+  at_chapter: string;
+}
+
+export interface DownstreamImpact {
+  chapter_id: string;
+  impact: string;
+}
+
+export interface WhatIfResponse {
+  summary: string;
+  downstream_impacts: DownstreamImpact[];
+}
+
 export async function uploadManuscript(file: File): Promise<UploadResponse> {
   const form = new FormData();
   form.append("file", file);
@@ -99,5 +128,24 @@ export async function fetchContradictions(manuscriptId: string): Promise<Contrad
 export async function fetchThreads(manuscriptId: string): Promise<ThreadsResponse> {
   const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/threads`);
   if (!res.ok) throw new Error(`Threads fetch failed (${res.status})`);
+  return res.json();
+}
+
+export async function fetchArc(manuscriptId: string): Promise<ArcResponse> {
+  const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/arc`);
+  if (!res.ok) throw new Error(`Arc fetch failed (${res.status})`);
+  return res.json();
+}
+
+export async function runWhatIf(
+  manuscriptId: string,
+  body: WhatIfRequest
+): Promise<WhatIfResponse> {
+  const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/whatif`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`What-if request failed (${res.status})`);
   return res.json();
 }

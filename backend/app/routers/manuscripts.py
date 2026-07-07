@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.manuscript import Manuscript
+from app.models.manuscript import Chapter, Manuscript
 from app.services import extraction_pipeline
+from app.services.whatif_generator import WhatIfRequest, run_whatif
 
 router = APIRouter(tags=["manuscripts"])
 
@@ -118,20 +120,54 @@ async def get_arc(
     manuscript_id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Return emotional arc data (stub)."""
-    return {"manuscript_id": manuscript_id, "arc": []}
+    """Return emotional arc data points (available when status is 'done')."""
+    manuscript = await _fetch_or_404(db, manuscript_id)
+    if manuscript.status != "done":
+        raise HTTPException(
+            status_code=202,
+            detail=f"Processing not complete yet. Current status: {manuscript.status}",
+        )
+    return {"manuscript_id": manuscript.id, "arc": manuscript.get_arc()}
 
 
 @router.post("/manuscripts/{manuscript_id}/whatif")
-async def run_whatif(
+async def run_whatif_endpoint(
     manuscript_id: str,
+    body: WhatIfRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Run what-if exploration (stub)."""
-    return {
-        "summary": "This is a mock narrative sketch of the alternate path.",
-        "downstream_impacts": []
-    }
+    """Run a what-if exploration scenario."""
+    manuscript = await _fetch_or_404(db, manuscript_id)
+    if manuscript.status != "done":
+        raise HTTPException(
+            status_code=202,
+            detail=f"Processing not complete yet. Current status: {manuscript.status}",
+        )
+
+    # Load chapters and characters from DB
+    result = await db.execute(
+        select(Chapter).where(Chapter.manuscript_id == manuscript_id)
+    )
+    db_chapters = list(result.scalars().all())
+    db_chapters = sorted(db_chapters, key=lambda c: c.id)
+
+    chapters = [
+        {
+            "chapter_id": ch.chapter_id,
+            "text": ch.text,
+            "word_count": ch.word_count,
+            "world_state": ch.get_world_state(),
+        }
+        for ch in db_chapters
+    ]
+
+    response = run_whatif(
+        manuscript_id=manuscript_id,
+        request=body,
+        chapters=chapters,
+        characters=manuscript.get_characters(),
+    )
+    return response.model_dump()
 
 
 # ---------------------------------------------------------------------------
