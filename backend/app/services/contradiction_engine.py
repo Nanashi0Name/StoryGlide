@@ -30,8 +30,8 @@ def detect_contradictions(
     """
     flags = []
 
-    # Sort chapters chronologically
-    sorted_chapters = sorted(chapters, key=lambda c: get_chapter_sort_key(c["chapter_id"]))
+    # Sort chapters chronologically by database primary key ID
+    sorted_chapters = sorted(chapters, key=lambda c: c.get("id", 0))
     chapter_titles = {c["chapter_id"]: c["title"] for c in sorted_chapters}
 
     # 1. Character Status Contradictions
@@ -69,27 +69,28 @@ def detect_contradictions(
         world_state = chap.get("world_state", {})
         faction_control = world_state.get("faction_control", {})
 
-        for loc, status in faction_control.items():
-            prev_status, prev_chap = location_history.get(loc, (None, None))
-            
-            # Simple conflict rule: if previously destroyed, and now active/recovered
-            if prev_status == "destroyed" and status == "active":
-                prev_title = chapter_titles.get(prev_chap, prev_chap)
-                curr_title = chapter_titles.get(chap_id, chap_id)
-                flags.append({
-                    "id": f"flag_loc_{uuid.uuid4().hex[:8]}",
-                    "type": "state_conflict",
-                    "entity": loc,
-                    "conflicting_chapters": [prev_chap, chap_id],
-                    "description": f"Kingdom of Varen marked destroyed in {prev_title}; army referenced as active in {curr_title}",
-                    "confidence": 0.82,
-                })
-            
-            # Update status history (simplified parser for mock/real values)
-            status_lower = str(status).lower()
-            if "destroyed" in status_lower:
-                location_history[loc] = ("destroyed", chap_id)
-            elif "active" in status_lower:
-                location_history[loc] = ("active", chap_id)
+        if isinstance(faction_control, dict):
+            for loc, status in faction_control.items():
+                prev_status, prev_chap = location_history.get(loc, (None, None))
+                
+                # Simple conflict rule: if previously destroyed, and now active/recovered
+                if prev_status == "destroyed" and status == "active":
+                    prev_title = chapter_titles.get(prev_chap, prev_chap)
+                    curr_title = chapter_titles.get(chap_id, chap_id)
+                    flags.append({
+                        "id": f"flag_loc_{uuid.uuid4().hex[:8]}",
+                        "type": "state_conflict",
+                        "entity": loc,
+                        "conflicting_chapters": [prev_chap, chap_id],
+                        "description": f"Kingdom of Varen marked destroyed in {prev_title}; army referenced as active in {curr_title}",
+                        "confidence": 0.82,
+                    })
+                
+                # Update status history (simplified parser for mock/real values)
+                status_lower = str(status).lower()
+                if "destroyed" in status_lower:
+                    location_history[loc] = ("destroyed", chap_id)
+                elif "active" in status_lower:
+                    location_history[loc] = ("active", chap_id)
 
     return flags

@@ -65,7 +65,7 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                 select(Chapter).where(Chapter.manuscript_id == manuscript_id)
             )
             db_chapters = list(result.scalars().all())
-            db_chapters = sorted(db_chapters, key=lambda c: contradiction_engine.get_chapter_sort_key(c.chapter_id))
+            db_chapters = sorted(db_chapters, key=lambda c: c.id)
 
             all_characters: dict[str, CharacterObject] = {}
             all_extracted_threads: list[dict] = []
@@ -103,6 +103,7 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                 all_extracted_threads.extend(threads)
 
                 chapters_data.append({
+                    "id": ch.id,
                     "chapter_id": ch.chapter_id,
                     "title": ch.title,
                     "text": ch.text,

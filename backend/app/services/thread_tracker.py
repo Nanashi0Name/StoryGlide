@@ -22,8 +22,7 @@ def track_threads(
     unresolved_threads = []
 
     # Sort chapters to check resolution order
-    from app.services.contradiction_engine import get_chapter_sort_key
-    sorted_chapters = sorted(chapters, key=lambda c: get_chapter_sort_key(c["chapter_id"]))
+    sorted_chapters = sorted(chapters, key=lambda c: c.get("id", 0))
 
     for thread in all_extracted_threads:
         intro_chap = thread["introduced_chapter"]

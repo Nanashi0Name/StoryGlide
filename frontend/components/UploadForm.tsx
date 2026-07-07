@@ -219,7 +219,7 @@ export default function UploadForm() {
                     <div>
                       <div className="font-bold text-lg text-[#1f2328]">
                         {char.name}
-                        {char.aliases.length > 0 && (
+                        {char.aliases && char.aliases.length > 0 && (
                           <span className="block text-xs font-normal text-[#57606a] mt-1">
                             aka {char.aliases.join(", ")}
                           </span>
@@ -247,7 +247,7 @@ export default function UploadForm() {
                       </div>
                     </div>
 
-                    {char.relationships.length > 0 && (
+                    {char.relationships && char.relationships.length > 0 && (
                       <div className="mt-4 pt-3 border-t border-[#f1f2f4]">
                         <div className="text-xs font-semibold text-[#24292f] mb-1.5">Relationships:</div>
                         <div className="space-y-1">
