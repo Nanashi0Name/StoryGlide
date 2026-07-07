@@ -144,7 +144,7 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
         except Exception as exc:  # noqa: BLE001
             logger.exception("Pipeline: manuscript %s failed", manuscript_id)
             manuscript.status = "error"
-            manuscript.error_message = str(exc)
+            manuscript.error_message = str(exc)[:500]
             await db.commit()
 
 

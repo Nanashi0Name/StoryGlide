@@ -2,7 +2,7 @@ import json
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -65,7 +65,7 @@ class Chapter(Base):
     __tablename__ = "chapters"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    manuscript_id: Mapped[str] = mapped_column(String, nullable=False)
+    manuscript_id: Mapped[str] = mapped_column(String, ForeignKey("manuscripts.id", ondelete="CASCADE"), nullable=False)
     chapter_id: Mapped[str] = mapped_column(String, nullable=False)
     title: Mapped[str] = mapped_column(String, nullable=False)
     word_count: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -91,7 +91,16 @@ export default function UploadForm() {
       {/* Error */}
       {stage === "error" && (
         <div className="mt-6 rounded-xl border border-red-200 bg-red-50/50 p-4 text-sm text-red-700 shadow-sm">
-          <strong>Error:</strong> {errorMsg}
+          <div className="flex items-start justify-between gap-4">
+            <span><strong>Error:</strong> {errorMsg}</span>
+            <button
+              type="button"
+              onClick={() => { setStage("idle"); setErrorMsg(""); }}
+              className="shrink-0 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-200 transition-colors"
+            >
+              Try again
+            </button>
+          </div>
         </div>
       )}
     </div>

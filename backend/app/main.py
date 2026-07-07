@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -5,11 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import create_all_tables
 from app.routers import manuscripts
+from app import seed_demo
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_all_tables()
+    # Seed demo manuscript in the background — startup is instant regardless.
+    asyncio.create_task(seed_demo.seed())
     yield
 
 

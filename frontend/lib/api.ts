@@ -137,6 +137,20 @@ export async function fetchArc(manuscriptId: string): Promise<ArcResponse> {
   return res.json();
 }
 
+export interface DashboardResponse {
+  manuscript_id: string;
+  characters: CharacterObject[];
+  contradictions: ContradictionFlag[];
+  threads: UnresolvedThread[];
+  arc: ArcDataPoint[];
+}
+
+export async function fetchDashboard(manuscriptId: string): Promise<DashboardResponse> {
+  const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/dashboard`);
+  if (!res.ok) throw new Error(`Dashboard fetch failed (${res.status})`);
+  return res.json();
+}
+
 export async function runWhatIf(
   manuscriptId: string,
   body: WhatIfRequest

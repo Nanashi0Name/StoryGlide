@@ -11,13 +11,10 @@ import {
   CharacterObject,
   ContradictionFlag,
   UnresolvedThread,
-  fetchArc,
-  fetchCharacters,
-  fetchContradictions,
-  fetchThreads,
+  fetchDashboard,
 } from "@/lib/api";
 import { useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 type Tab = "overview" | "arc" | "contradictions" | "threads" | "whatif";
 
@@ -40,6 +37,17 @@ function Spinner() {
   );
 }
 
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#e5e7eb] bg-white py-16 text-center">
+      <svg className="mb-3 h-10 w-10 text-[#e5e7eb]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+      </svg>
+      <p className="text-sm text-[#57606a]">{message}</p>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const params = useParams();
   const manuscriptId = params?.manuscriptId as string;
@@ -53,30 +61,26 @@ export default function DashboardPage() {
   const [threads, setThreads] = useState<UnresolvedThread[]>([]);
   const [arc, setArc] = useState<ArcDataPoint[]>([]);
 
-  useEffect(() => {
+  const loadAll = useCallback(async () => {
     if (!manuscriptId) return;
-
-    async function loadAll() {
-      try {
-        const [charsRes, contrRes, threadsRes, arcRes] = await Promise.all([
-          fetchCharacters(manuscriptId),
-          fetchContradictions(manuscriptId),
-          fetchThreads(manuscriptId),
-          fetchArc(manuscriptId),
-        ]);
-        setCharacters(charsRes.characters);
-        setContradictions(contrRes.contradictions);
-        setThreads(threadsRes.threads);
-        setArc(arcRes.arc);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setLoading(false);
-      }
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchDashboard(manuscriptId);
+      setCharacters(data.characters);
+      setContradictions(data.contradictions);
+      setThreads(data.threads);
+      setArc(data.arc);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
     }
-
-    loadAll();
   }, [manuscriptId]);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
@@ -98,7 +102,15 @@ export default function DashboardPage() {
 
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-            <strong>Failed to load dashboard:</strong> {error}
+            <div className="flex items-start justify-between gap-4">
+              <span><strong>Failed to load dashboard:</strong> {error}</span>
+              <button
+                onClick={loadAll}
+                className="shrink-0 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-200 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         )}
 
@@ -157,7 +169,11 @@ export default function DashboardPage() {
                 {/* Relationship graph */}
                 <section>
                   <SectionHeading>Character Relationship Graph</SectionHeading>
-                  <RelationshipGraph characters={characters} />
+                  {characters.length === 0 ? (
+                    <EmptyState message="No characters were extracted from this manuscript." />
+                  ) : (
+                    <RelationshipGraph characters={characters} />
+                  )}
                 </section>
               </div>
             )}
@@ -170,9 +186,13 @@ export default function DashboardPage() {
                   <p className="text-sm text-[#57606a] mb-4">
                     Tension score per chapter (0 = calm, 1 = maximum tension). Hover dots for emotion detail. Dashed line = reference arc.
                   </p>
-                  <div className="rounded-xl border border-[#e5e7eb] bg-white p-4">
-                    <ArcChart arc={arc} />
-                  </div>
+                  {arc.length === 0 ? (
+                    <EmptyState message="No arc data available — the manuscript may still be processing." />
+                  ) : (
+                    <div className="rounded-xl border border-[#e5e7eb] bg-white p-4">
+                      <ArcChart arc={arc} />
+                    </div>
+                  )}
                 </section>
 
                 <section>
@@ -180,7 +200,11 @@ export default function DashboardPage() {
                   <p className="text-sm text-[#57606a] mb-4">
                     Word count per chapter — darker = denser scene.
                   </p>
-                  <PacingHeatmap arc={arc} />
+                  {arc.length === 0 ? (
+                    <EmptyState message="No pacing data available yet." />
+                  ) : (
+                    <PacingHeatmap arc={arc} />
+                  )}
                 </section>
               </div>
             )}
@@ -194,7 +218,11 @@ export default function DashboardPage() {
                 <p className="text-sm text-[#57606a]">
                   State-diff analysis detected these continuity conflicts across chapters.
                 </p>
-                <ContradictionsList contradictions={contradictions} />
+                {contradictions.length === 0 ? (
+                  <EmptyState message="No contradictions detected — your manuscript's world state is consistent." />
+                ) : (
+                  <ContradictionsList contradictions={contradictions} />
+                )}
               </div>
             )}
 
@@ -205,9 +233,13 @@ export default function DashboardPage() {
                   Unresolved Narrative Threads ({threads.length})
                 </SectionHeading>
                 <p className="text-sm text-[#57606a]">
-                  Planted story elements (Chekhov's guns, promises, foreshadowing) that were not resolved by the final chapter.
+                  Planted story elements (Chekhov&apos;s guns, promises, foreshadowing) that were not resolved by the final chapter.
                 </p>
-                <ThreadsList threads={threads} />
+                {threads.length === 0 ? (
+                  <EmptyState message="No unresolved threads detected — all planted elements appear to be resolved." />
+                ) : (
+                  <ThreadsList threads={threads} />
+                )}
               </div>
             )}
 
@@ -216,7 +248,7 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <SectionHeading>What-If Exploration</SectionHeading>
                 <p className="text-sm text-[#57606a]">
-                  Select a scenario and let AI simulate how alternate choices would cascade through your story's world state.
+                  Select a scenario and let AI simulate how alternate choices would cascade through your story&apos;s world state.
                 </p>
                 <WhatIfPanel
                   manuscriptId={manuscriptId}

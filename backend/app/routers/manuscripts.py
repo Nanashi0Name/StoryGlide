@@ -130,6 +130,27 @@ async def get_arc(
     return {"manuscript_id": manuscript.id, "arc": manuscript.get_arc()}
 
 
+@router.get("/manuscripts/{manuscript_id}/dashboard")
+async def get_dashboard(
+    manuscript_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return all analysis data in a single aggregated payload (available when status is 'done')."""
+    manuscript = await _fetch_or_404(db, manuscript_id)
+    if manuscript.status != "done":
+        raise HTTPException(
+            status_code=202,
+            detail=f"Processing not complete yet. Current status: {manuscript.status}",
+        )
+    return {
+        "manuscript_id": manuscript.id,
+        "characters": manuscript.get_characters(),
+        "contradictions": manuscript.get_contradictions(),
+        "threads": manuscript.get_threads(),
+        "arc": manuscript.get_arc(),
+    }
+
+
 @router.post("/manuscripts/{manuscript_id}/whatif")
 async def run_whatif_endpoint(
     manuscript_id: str,
