@@ -17,7 +17,7 @@ from app.config import settings
 from app.models.character import CharacterObject, CharacterRelationship
 from app.services.nlu_extractor import NLUResult
 
-GRANITE_MODEL_ID = "ibm/granite-3-8b-instruct"
+GRANITE_MODEL_ID = settings.watsonx_model_id or "ibm/granite-4-h-small"
 
 _EXTRACT_PROMPT = """\
 You are a story analysis assistant.

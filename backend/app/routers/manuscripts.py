@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -182,7 +184,8 @@ async def run_whatif_endpoint(
         for ch in db_chapters
     ]
 
-    response = run_whatif(
+    response = await asyncio.to_thread(
+        run_whatif,
         manuscript_id=manuscript_id,
         request=body,
         chapters=chapters,

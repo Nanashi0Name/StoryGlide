@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 from app.config import settings
 
-GRANITE_MODEL_ID = "ibm/granite-3-8b-instruct"
+GRANITE_MODEL_ID = settings.watsonx_model_id or "ibm/granite-4-h-small"
 
 _ARC_PROMPT = """\
 You are a literary analysis assistant. Read the chapter excerpt below and output a \

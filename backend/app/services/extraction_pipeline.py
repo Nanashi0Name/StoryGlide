@@ -9,6 +9,7 @@ Called as a FastAPI BackgroundTask so the HTTP response returns immediately.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -72,10 +73,11 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
             chapters_data: list[dict] = []
 
             for ch in db_chapters:
-                nlu_result = nlu_extractor.extract(ch.text)
+                nlu_result = await asyncio.to_thread(nlu_extractor.extract, ch.text)
                 
                 # Extract characters
-                chapter_chars = granite_extractor.extract_characters(
+                chapter_chars = await asyncio.to_thread(
+                    granite_extractor.extract_characters,
                     chapter_id=ch.chapter_id,
                     chapter_text=ch.text,
                     nlu_result=nlu_result,
@@ -88,7 +90,8 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                         all_characters[char.id] = char
 
                 # Extract world state
-                world_state = granite_extractor.extract_world_state(
+                world_state = await asyncio.to_thread(
+                    granite_extractor.extract_world_state,
                     chapter_id=ch.chapter_id,
                     chapter_text=ch.text,
                     nlu_result=nlu_result,
@@ -96,7 +99,8 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                 ch.set_world_state(world_state)
 
                 # Extract threads
-                threads = granite_extractor.extract_threads(
+                threads = await asyncio.to_thread(
+                    granite_extractor.extract_threads,
                     chapter_id=ch.chapter_id,
                     chapter_text=ch.text,
                 )
@@ -124,10 +128,10 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
             )
 
             # Score emotional arc
-            arc_data = arc_scorer.score_arc(chapters_data)
+            arc_data = await asyncio.to_thread(arc_scorer.score_arc, chapters_data)
 
             # Build Chroma vector store for what-if retrieval
-            whatif_generator.embed_manuscript(manuscript_id, chapters_data)
+            await asyncio.to_thread(whatif_generator.embed_manuscript, manuscript_id, chapters_data)
 
             # Persist results
             manuscript.set_characters(char_list)

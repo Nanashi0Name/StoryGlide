@@ -31,8 +31,8 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-GRANITE_MODEL_ID = "ibm/granite-3-8b-instruct"
-EMBED_MODEL_ID = "ibm/slate-125m-english-rtrvr"
+GRANITE_MODEL_ID = settings.watsonx_model_id or "ibm/granite-4-h-small"
+EMBED_MODEL_ID = "ibm/slate-125m-english-rtrvr-v2"
 CHROMA_STORE_PATH = "./chroma_store"
 
 # ---------------------------------------------------------------------------

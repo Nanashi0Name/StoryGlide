@@ -103,10 +103,12 @@ export default function UploadForm() {
 
       {/* Error Panel */}
       {stage === "error" && (
-        <div className="rounded-xl border border-neon-rose/30 bg-neon-rose/5 p-4 text-xs font-mono text-neon-rose shadow-glow-rose/10 flex items-start justify-between gap-4 animate-scale-in">
-          <div className="space-y-1">
+        <div className="rounded-xl border border-neon-rose/30 bg-neon-rose/5 p-4 text-xs font-mono text-neon-rose shadow-glow-rose/10 flex items-start justify-between gap-4 animate-scale-in overflow-hidden">
+          <div className="space-y-1 min-w-0 flex-1">
             <div className="font-bold uppercase tracking-wider">[ANALYSIS_FAIL]</div>
-            <p className="text-slate-300 leading-normal">{errorMsg}</p>
+            <p className="text-slate-300 leading-normal break-all whitespace-pre-wrap max-h-48 overflow-y-auto pr-2">
+              {errorMsg}
+            </p>
           </div>
           <button
             type="button"
