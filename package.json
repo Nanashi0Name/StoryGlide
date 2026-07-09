@@ -1,0 +1,17 @@
+{
+  "name": "storyglide-root",
+  "version": "1.0.0",
+  "description": "StoryGlide root package to run backend and frontend concurrently",
+  "scripts": {
+    "install-all": "npm install --prefix frontend",
+    "backend": "cd backend && C:\\Python314\\python.exe -m uvicorn app.main:app --reload --port 8000",
+    "frontend": "npm run dev --prefix frontend",
+    "dev": "npx concurrently -k -p \"[{name}]\" -n \"backend,frontend\" -c \"green,blue\" \"npm run backend\" \"npm run frontend\"",
+    "type-check": "npm run type-check --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "test": "C:\\Python314\\python.exe -m pytest backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

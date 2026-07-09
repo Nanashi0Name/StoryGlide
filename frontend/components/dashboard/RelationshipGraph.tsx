@@ -2,7 +2,7 @@
 
 import { CharacterObject } from "@/lib/api";
 import dynamic from "next/dynamic";
-import React, { useEffect, useRef } from "react";
+import React from "react";
 
 // cytoscape must be loaded only in the browser
 const CytoscapeComponent = dynamic(() => import("react-cytoscapejs"), {
@@ -14,9 +14,9 @@ interface Props {
 }
 
 const SENTIMENT_COLOR: Record<string, string> = {
-  hostile: "#ef4444",
-  friendly: "#22c55e",
-  neutral: "#9ca3af",
+  hostile: "#ff4b72", // neon-rose
+  friendly: "#05f3ad", // neon-green
+  neutral: "#94a3b8", // slate-400
 };
 
 function buildElements(characters: CharacterObject[]) {
@@ -37,7 +37,7 @@ function buildElements(characters: CharacterObject[]) {
             id: key,
             source: c.id,
             target: rel.target_id,
-            label: rel.type,
+            label: rel.type.toUpperCase(),
             sentiment: rel.sentiment,
           },
         });
@@ -48,60 +48,68 @@ function buildElements(characters: CharacterObject[]) {
   return [...nodes, ...edges];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line
 const STYLESHEET: any[] = [
   {
     selector: "node",
     style: {
-      "background-color": "#3b82d4",
+      "background-color": "#0d1527",
+      "border-width": 2,
+      "border-color": "#0df0ff",
       "label": "data(label)",
-      "color": "#ffffff",
-      "font-size": "12px",
+      "color": "#f1f5f9",
+      "font-size": "11px",
+      "font-family": "var(--font-jakarta), system-ui, sans-serif",
       "text-valign": "center",
       "text-halign": "center",
-      "width": 80,
-      "height": 80,
+      "width": 75,
+      "height": 75,
       "text-wrap": "wrap",
-      "text-max-width": "70px",
+      "text-max-width": "68px",
+      "transition-property": "background-color border-color",
+      "transition-duration": 0.2,
     } as cytoscape.Css.Node,
   },
   {
     selector: "node:selected",
     style: {
-      "background-color": "#1d4ed8",
+      "background-color": "#0df0ff",
       "border-width": 3,
       "border-color": "#ffffff",
+      "color": "#060913",
+      "font-weight": "bold",
     } as cytoscape.Css.Node,
   },
   {
     selector: 'edge[sentiment = "hostile"]',
     style: {
-      "line-color": "#ef4444",
-      "target-arrow-color": "#ef4444",
+      "line-color": "#ff4b72",
+      "target-arrow-color": "#ff4b72",
     } as cytoscape.Css.Edge,
   },
   {
     selector: 'edge[sentiment = "friendly"]',
     style: {
-      "line-color": "#22c55e",
-      "target-arrow-color": "#22c55e",
+      "line-color": "#05f3ad",
+      "target-arrow-color": "#05f3ad",
     } as cytoscape.Css.Edge,
   },
   {
     selector: "edge",
     style: {
       "width": 2,
-      "line-color": "#9ca3af",
-      "target-arrow-color": "#9ca3af",
+      "line-color": "#475569",
+      "target-arrow-color": "#475569",
       "target-arrow-shape": "triangle",
       "curve-style": "bezier",
       "label": "data(label)",
-      "font-size": "10px",
-      "color": "#57606a",
+      "font-size": "8px",
+      "font-family": "var(--font-mono), monospace",
+      "color": "#94a3b8",
       "text-rotation": "autorotate",
-      "text-background-color": "#f7f8fa",
-      "text-background-opacity": 1,
-      "text-background-padding": "2px",
+      "text-background-color": "#060913",
+      "text-background-opacity": 0.9,
+      "text-background-padding": "3px",
     } as cytoscape.Css.Edge,
   },
 ];
@@ -109,7 +117,7 @@ const STYLESHEET: any[] = [
 export default function RelationshipGraph({ characters }: Props) {
   if (characters.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 rounded-xl border border-[#e5e7eb] bg-[#f7f8fa] text-sm text-[#57606a]">
+      <div className="flex items-center justify-center h-48 rounded-xl border border-obsidian-border bg-obsidian-card text-sm text-slate-400 font-mono">
         No characters extracted yet.
       </div>
     );
@@ -118,28 +126,92 @@ export default function RelationshipGraph({ characters }: Props) {
   const elements = buildElements(characters);
 
   return (
-    <div className="rounded-xl border border-[#e5e7eb] overflow-hidden" style={{ height: 480 }}>
+    <div className="rounded-2xl border border-obsidian-border overflow-hidden bg-[#060913] relative shadow-lg" style={{ height: 480 }}>
+      {/* HUD scanner visual lines */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none z-10"></div>
+      <div className="absolute top-2 left-3 font-mono text-[9px] text-slate-500 uppercase tracking-widest z-10">
+        [SYS_RENDER: CHARACTER_ENTITIES_RELATIONS]
+      </div>
+
       <CytoscapeComponent
         elements={elements}
         stylesheet={STYLESHEET}
-        layout={{ name: "cose", animate: false, padding: 40 }}
-        style={{ width: "100%", height: "100%", background: "#111827" }}
+        layout={{ name: "cose", animate: true, padding: 50, nodeOverlap: 20 } as any}
+        style={{ width: "100%", height: "100%", background: "#060913" }}
         cy={(cy) => {
-          cy.on("layoutstop", () => cy.fit(undefined, 40));
+          if ((cy as any)._storyglide_initialized) return;
+          (cy as any)._storyglide_initialized = true;
+
+          // Prevent cytoscape crash on endBatch/fit/headless when destroyed (layout animations still running)
+          const oldEndBatch = cy.endBatch;
+          cy.endBatch = function (this: any) {
+            try {
+              return oldEndBatch.apply(this, arguments as any);
+            } catch (err) {
+              if (cy.destroyed() || !(cy as any).renderer()) {
+                return this;
+              }
+              throw err;
+            }
+          };
+
+          const oldFit = cy.fit;
+          cy.fit = function (this: any) {
+            try {
+              return oldFit.apply(this, arguments as any);
+            } catch (err) {
+              if (cy.destroyed() || !(cy as any).renderer()) {
+                return this;
+              }
+              throw err;
+            }
+          };
+
+          const oldHeadless = (cy as any).headless;
+          (cy as any).headless = function (this: any) {
+            try {
+              return oldHeadless.apply(this, arguments as any);
+            } catch (err) {
+              if (cy.destroyed() || !(cy as any).renderer()) {
+                return true;
+              }
+              throw err;
+            }
+          };
+
+          cy.on("layoutstop", () => {
+            if (!cy.destroyed()) {
+              cy.fit(undefined, 50);
+            }
+          });
+        }}
+        diff={(a: any, b: any) => {
+          if (a === b) return false;
+          if (!a || !b) return true;
+          return JSON.stringify(a) !== JSON.stringify(b);
+        }}
+        get={(obj: any, key: string) => (obj ? obj[key] : null)}
+        toJson={(obj: any) => obj}
+        forEach={(list: any[], fn: any) => {
+          if (list) list.forEach(fn);
         }}
       />
-      <div className="flex gap-4 px-4 py-2 bg-[#111827] border-t border-gray-700 text-xs text-gray-400">
+      
+      <div className="absolute bottom-0 left-0 right-0 flex gap-4 px-4 py-3 bg-[#0a0f1d]/90 backdrop-blur-sm border-t border-obsidian-border text-[10px] font-mono uppercase tracking-wider text-slate-400 z-10">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-6 rounded" style={{ background: "#ef4444" }} />
-          hostile
+          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#ff4b72" }} />
+          HOSTILE
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-6 rounded" style={{ background: "#22c55e" }} />
-          friendly
+          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#05f3ad" }} />
+          FRIENDLY
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-6 rounded" style={{ background: "#9ca3af" }} />
-          neutral
+          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#475569" }} />
+          NEUTRAL
+        </span>
+        <span className="ml-auto text-[9px] text-slate-500">
+          * DRAG NODES TO ORGANIZE NETWORKS
         </span>
       </div>
     </div>

@@ -1,19 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg: #ffffff;
-  --surface: #f7f8fa;
-  --border: #e5e7eb;
-  --text: #1f2328;
-  --muted: #57606a;
-  --accent: #3b82d4;
+  --font-jakarta: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-fraunces: "Fraunces", Georgia, serif;
+  --font-cinzel: "Cinzel", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --bg: #060913;
+  --surface: rgba(12, 17, 29, 0.75);
+  --border: rgba(255, 255, 255, 0.07);
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --accent: #0df0ff;
+  --accent-glow: rgba(13, 240, 255, 0.15);
 }
 
+
 body {
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
-  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-jakarta), system-ui, sans-serif;
   line-height: 1.6;
+  overflow-x: hidden;
 }
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #060913;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Atmospheric Flight Grids & HUD overlays */
+.hud-grid {
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+.hud-grid-fine {
+  background-size: 10px 10px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+}
+
+.glow-orb-primary {
+  filter: blur(140px);
+  background: radial-gradient(circle, rgba(13, 240, 255, 0.08) 0%, rgba(189, 94, 255, 0.03) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+.glow-orb-secondary {
+  filter: blur(120px);
+  background: radial-gradient(circle, rgba(5, 243, 173, 0.06) 0%, rgba(13, 240, 255, 0.02) 60%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Glassmorphism panel style */
+.glass-panel {
+  background: rgba(12, 17, 29, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.glass-panel-interactive {
+  background: rgba(12, 17, 29, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-interactive:hover {
+  background: rgba(20, 26, 40, 0.85);
+  border-color: rgba(13, 240, 255, 0.3);
+  box-shadow: 0 0 20px rgba(13, 240, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Custom terminal scanlines */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanlines::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 10;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+}
+
+/* Typing cursor animation */
+@keyframes blink {
+  0%, 100% { opacity: 1 }
+  50% { opacity: 0 }
+}
+.cursor-blink::after {
+  content: "_";
+  animation: blink 1s infinite;
+}
+

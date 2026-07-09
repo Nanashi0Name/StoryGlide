@@ -17,6 +17,7 @@ export default function UploadForm() {
   const [stage, setStage] = useState<Stage>("idle");
   const [statusLabel, setStatusLabel] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [fileSelected, setFileSelected] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -26,7 +27,7 @@ export default function UploadForm() {
 
     setStage("uploading");
     setErrorMsg("");
-    setStatusLabel("Uploading…");
+    setStatusLabel("UPLOADING_DRAFT...");
 
     try {
       const { manuscript_id } = await uploadManuscript(file);
@@ -37,7 +38,7 @@ export default function UploadForm() {
       while (polls < MAX_POLLS) {
         await sleep(POLL_INTERVAL_MS);
         const status = await pollStatus(manuscript_id);
-        setStatusLabel(`Processing… (${status.status})`);
+        setStatusLabel(`RUNNING_DIAGNOSTICS (${status.status.toUpperCase()})`);
 
         if (status.status === "done") {
           router.push(`/dashboard/${manuscript_id}`);
@@ -56,51 +57,64 @@ export default function UploadForm() {
   }, [router]);
 
   return (
-    <div>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="rounded-xl border border-[#e5e7eb] bg-gradient-to-br from-white to-[#f7f8fa] p-6 shadow-sm">
-          <label className="block text-sm font-semibold text-[#1f2328] mb-2">
-            Manuscript file
+    <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="rounded-xl border border-obsidian-border bg-[#0a0f1d] p-6 shadow-inner relative overflow-hidden group">
+          {/* Subtle decoration lines representing radar scanner */}
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-neon-cyan/40 to-transparent animate-pulse"></div>
+          
+          <label className="block text-xs font-mono font-semibold text-slate-400 uppercase tracking-widest mb-3">
+            SELECT_MANUSCRIPT_FILE
           </label>
+          
           <input
             ref={fileRef}
             type="file"
             accept=".txt,.docx"
-            className="block w-full text-sm text-[#57606a] file:mr-4 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-[#3b82f6] file:to-[#1d4ed8] file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-white hover:file:opacity-90 transition-all cursor-pointer"
+            onChange={(e) => setFileSelected(!!e.target.files?.length)}
+            className="block w-full text-sm text-slate-400 font-sans
+              file:mr-4 file:rounded-lg file:border file:border-neon-cyan/30 file:bg-neon-cyan/5 
+              file:px-4 file:py-2 file:text-xs file:font-mono file:font-bold file:text-neon-cyan 
+              file:uppercase file:tracking-wider hover:file:bg-neon-cyan/20 file:transition-all 
+              cursor-pointer focus:outline-none"
             disabled={stage === "uploading" || stage === "processing"}
           />
-          <p className="mt-2 text-xs text-[#57606a]">Supported formats: .txt, .docx</p>
+          
+          <p className="mt-3 text-[11px] text-slate-500 font-mono">
+            FILE_EXTENSIONS: .txt, .docx (Max 15MB)
+          </p>
         </div>
 
         <button
           type="submit"
-          disabled={stage === "uploading" || stage === "processing"}
-          className="rounded-lg bg-gradient-to-r from-[#3b82f6] to-[#1d4ed8] px-6 py-2.5 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          disabled={stage === "uploading" || stage === "processing" || !fileSelected}
+          className="w-full flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-neon-cyan to-[#00cce0] px-6 py-3.5 text-sm font-bold text-[#060913] uppercase tracking-wider font-mono shadow-glow-cyan/20 hover:shadow-glow-cyan disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300"
         >
           {stage === "uploading" || stage === "processing" ? (
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2.5">
               <Spinner />
-              {statusLabel}
+              <span className="animate-pulse">{statusLabel}</span>
             </span>
           ) : (
-            "Analyse manuscript"
+            <span>RUN TELEMETRY ANALYSIS</span>
           )}
         </button>
       </form>
 
-      {/* Error */}
+      {/* Error Panel */}
       {stage === "error" && (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50/50 p-4 text-sm text-red-700 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <span><strong>Error:</strong> {errorMsg}</span>
-            <button
-              type="button"
-              onClick={() => { setStage("idle"); setErrorMsg(""); }}
-              className="shrink-0 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-200 transition-colors"
-            >
-              Try again
-            </button>
+        <div className="rounded-xl border border-neon-rose/30 bg-neon-rose/5 p-4 text-xs font-mono text-neon-rose shadow-glow-rose/10 flex items-start justify-between gap-4 animate-scale-in">
+          <div className="space-y-1">
+            <div className="font-bold uppercase tracking-wider">[ANALYSIS_FAIL]</div>
+            <p className="text-slate-300 leading-normal">{errorMsg}</p>
           </div>
+          <button
+            type="button"
+            onClick={() => { setStage("idle"); setErrorMsg(""); }}
+            className="shrink-0 rounded bg-neon-rose/10 border border-neon-rose/30 px-3 py-1.5 font-bold uppercase tracking-wider text-neon-rose hover:bg-neon-rose/20 transition-colors"
+          >
+            DISMISS
+          </button>
         </div>
       )}
     </div>
@@ -110,7 +124,7 @@ export default function UploadForm() {
 function Spinner() {
   return (
     <svg
-      className="h-4 w-4 animate-spin text-white"
+      className="h-4 w-4 animate-spin text-[#060913]"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"

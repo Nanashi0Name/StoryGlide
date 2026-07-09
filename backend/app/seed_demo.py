@@ -21,6 +21,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 _DEMO_FILENAME = "demo_the_time_machine.txt"
+_DEMO_MANUSCRIPT_ID = "d54c0525-28c2-417e-9660-1ad9aa29bc54"
 # Resolve path relative to this file: backend/app/seed_demo.py → backend/ → project_root/data/
 _DATA_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "the_time_machine.txt"
 _ID_FILE = Path(__file__).resolve().parent.parent / "demo_manuscript_id.txt"
@@ -56,7 +57,7 @@ async def seed() -> None:
             return
 
         file_bytes = _DATA_FILE.read_bytes()
-        manuscript = Manuscript(filename=_DEMO_FILENAME, status="processing")
+        manuscript = Manuscript(id=_DEMO_MANUSCRIPT_ID, filename=_DEMO_FILENAME, status="processing")
         db.add(manuscript)
         await db.commit()
         await db.refresh(manuscript)
