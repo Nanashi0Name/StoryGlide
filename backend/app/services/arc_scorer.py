@@ -85,6 +85,20 @@ def score_arc(chapters: list) -> list[dict]:
         chapter_id = ch.get("chapter_id", f"chapter_{idx + 1:02d}")
         word_count = ch.get("word_count", 0)
 
+        # Check if emotional arc details are already cached in world_state
+        world_state = ch.get("world_state", {})
+        if isinstance(world_state, dict) and "tension_score" in world_state:
+            results.append(
+                ArcDataPoint(
+                    chapter_id=chapter_id,
+                    tension_score=world_state["tension_score"],
+                    sentiment=world_state.get("sentiment", "neutral"),
+                    dominant_emotion=world_state.get("dominant_emotion", "anticipation"),
+                    word_count=word_count,
+                ).model_dump()
+            )
+            continue
+
         if settings.mock_ai:
             tension, sentiment, emotion = _MOCK_ARCS[idx % len(_MOCK_ARCS)]
             results.append(

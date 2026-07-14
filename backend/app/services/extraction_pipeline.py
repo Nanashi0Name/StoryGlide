@@ -36,36 +36,46 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
             return
 
         try:
-            # Stage 1: parse + chunk
-            manuscript.status = "chunked"
-            await db.commit()
+            from sqlalchemy import select
+            
+            # Check if chapters already exist for this manuscript (resumable)
+            result = await db.execute(
+                select(Chapter).where(Chapter.manuscript_id == manuscript_id)
+            )
+            db_chapters = list(result.scalars().all())
 
-            text = chunker_svc.parse_text(file_bytes, filename)
-            chunks = chunker_svc.split_into_chapters(text)
+            if not db_chapters:
+                # Stage 1: parse + chunk
+                manuscript.status = "chunked"
+                await db.commit()
 
-            for chunk in chunks:
-                db.add(
-                    Chapter(
-                        manuscript_id=manuscript_id,
-                        chapter_id=chunk.chapter_id,
-                        title=chunk.title,
-                        word_count=chunk.word_count,
-                        text=chunk.text,
+                text = chunker_svc.parse_text(file_bytes, filename)
+                chunks = chunker_svc.split_into_chapters(text)
+
+                for chunk in chunks:
+                    db.add(
+                        Chapter(
+                            manuscript_id=manuscript_id,
+                            chapter_id=chunk.chapter_id,
+                            title=chunk.title,
+                            word_count=chunk.word_count,
+                            text=chunk.text,
+                        )
                     )
+                await db.commit()
+                
+                # Fetch them again
+                result = await db.execute(
+                    select(Chapter).where(Chapter.manuscript_id == manuscript_id)
                 )
-            await db.commit()
+                db_chapters = list(result.scalars().all())
 
             # Stage 2: extraction
             manuscript.status = "extracting"
             await db.commit()
 
-            from sqlalchemy import select
             from app.services import contradiction_engine, thread_tracker
 
-            result = await db.execute(
-                select(Chapter).where(Chapter.manuscript_id == manuscript_id)
-            )
-            db_chapters = list(result.scalars().all())
             db_chapters = sorted(db_chapters, key=lambda c: c.id)
 
             all_characters: dict[str, CharacterObject] = {}
@@ -73,15 +83,48 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
             chapters_data: list[dict] = []
 
             for ch in db_chapters:
-                nlu_result = await asyncio.to_thread(nlu_extractor.extract, ch.text)
+                # Check if this chapter was already processed
+                world_state = ch.get_world_state()
+                chapter_chars_raw = ch.get_characters()
+                threads = ch.get_threads()
                 
-                # Extract characters
-                chapter_chars = await asyncio.to_thread(
-                    granite_extractor.extract_characters,
-                    chapter_id=ch.chapter_id,
-                    chapter_text=ch.text,
-                    nlu_result=nlu_result,
-                )
+                if world_state and chapter_chars_raw:
+                    logger.info("Pipeline: Chapter %s already processed — loading from cache.", ch.chapter_id)
+                    chapter_chars = [CharacterObject(**c) for c in chapter_chars_raw]
+                else:
+                    logger.info("Pipeline: Processing Chapter %s with watsonx.ai...", ch.chapter_id)
+                    nlu_result = await asyncio.to_thread(nlu_extractor.extract, ch.text)
+                    
+                    extracted_data = await asyncio.to_thread(
+                        granite_extractor.extract_all,
+                        chapter_id=ch.chapter_id,
+                        chapter_text=ch.text,
+                        nlu_result=nlu_result,
+                    )
+                    chapter_chars = extracted_data["characters"]
+                    world_state = extracted_data["world_state"]
+                    threads = extracted_data["threads"]
+                    
+                    # Compute emotional arc for this chapter and embed it in world_state for caching
+                    single_chapter_data = [{
+                        "chapter_id": ch.chapter_id,
+                        "text": ch.text,
+                        "word_count": ch.word_count,
+                        "world_state": world_state
+                    }]
+                    single_arc = await asyncio.to_thread(arc_scorer.score_arc, single_chapter_data)
+                    if single_arc:
+                        world_state["tension_score"] = single_arc[0]["tension_score"]
+                        world_state["sentiment"] = single_arc[0]["sentiment"]
+                        world_state["dominant_emotion"] = single_arc[0]["dominant_emotion"]
+                    
+                    # Cache them on the chapter DB row
+                    ch.set_world_state(world_state)
+                    ch.set_characters([c.model_dump_api() for c in chapter_chars])
+                    ch.set_threads(threads)
+                    await db.commit()
+                
+                # Merge characters
                 for char in chapter_chars:
                     if char.id in all_characters:
                         existing = all_characters[char.id]
@@ -89,21 +132,6 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                     else:
                         all_characters[char.id] = char
 
-                # Extract world state
-                world_state = await asyncio.to_thread(
-                    granite_extractor.extract_world_state,
-                    chapter_id=ch.chapter_id,
-                    chapter_text=ch.text,
-                    nlu_result=nlu_result,
-                )
-                ch.set_world_state(world_state)
-
-                # Extract threads
-                threads = await asyncio.to_thread(
-                    granite_extractor.extract_threads,
-                    chapter_id=ch.chapter_id,
-                    chapter_text=ch.text,
-                )
                 all_extracted_threads.extend(threads)
 
                 chapters_data.append({

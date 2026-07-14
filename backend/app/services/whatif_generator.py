@@ -247,6 +247,15 @@ def embed_manuscript(manuscript_id: str, chapters: list) -> None:
             text = ch.get("text", "")[:2000]  # truncate for embedding budget
             doc_id = _stable_id(manuscript_id, chapter_id)
 
+            # Skip generating embedding if this chapter is already indexed in Chroma
+            try:
+                existing = collection.get(ids=[doc_id])
+                if existing and existing.get("ids"):
+                    logger.info("embed_manuscript: Chapter %s already embedded in Chroma — skipping.", chapter_id)
+                    continue
+            except Exception:
+                pass
+
             raw_embed = embed_model.generate_embeddings(
                 input=text,
                 params={"return_tokens": False},

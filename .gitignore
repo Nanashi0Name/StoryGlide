@@ -43,3 +43,7 @@ Thumbs.db
 
 # Lock files - judges run: npm install / pip install -r requirements.txt
 package-lock.json
+
+# Local documentation (ignored from GitHub)
+docs/watsonx_token_incident_report.md
+docs/judge-demo-plan.md

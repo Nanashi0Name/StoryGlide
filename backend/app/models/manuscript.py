@@ -71,6 +71,8 @@ class Chapter(Base):
     word_count: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     world_state_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    characters_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    threads_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     manuscript: Mapped["Manuscript"] = relationship("Manuscript", back_populates="chapters")
 
@@ -81,3 +83,19 @@ class Chapter(Base):
 
     def set_world_state(self, world_state: dict) -> None:
         self.world_state_json = json.dumps(world_state)
+
+    def get_characters(self) -> list:
+        if self.characters_json is None:
+            return []
+        return json.loads(self.characters_json)
+
+    def set_characters(self, characters: list) -> None:
+        self.characters_json = json.dumps(characters)
+
+    def get_threads(self) -> list:
+        if self.threads_json is None:
+            return []
+        return json.loads(self.threads_json)
+
+    def set_threads(self, threads: list) -> None:
+        self.threads_json = json.dumps(threads)

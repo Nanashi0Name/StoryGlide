@@ -58,9 +58,6 @@ def extract(text: str) -> NLUResult:
     from ibm_watson.natural_language_understanding_v1 import (
         EntitiesOptions,
         Features,
-        KeywordsOptions,
-        RelationsOptions,
-        SentimentOptions,
     )
     from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 
@@ -68,19 +65,18 @@ def extract(text: str) -> NLUResult:
     nlu = NaturalLanguageUnderstandingV1(version="2022-04-07", authenticator=authenticator)
     nlu.set_service_url(settings.watson_nlu_url)
 
+    # 1. Limit text to 3,000 characters to match Granite's window and use exactly 1 text unit.
+    # 2. Only request the entities feature with limit 20 to avoid unused billing features.
     response = nlu.analyze(
-        text=text[:50_000],  # NLU has a character limit
+        text=text[:3000],
         features=Features(
-            entities=EntitiesOptions(sentiment=True, limit=50),
-            relations=RelationsOptions(),
-            sentiment=SentimentOptions(),
-            keywords=KeywordsOptions(sentiment=True, limit=30),
+            entities=EntitiesOptions(limit=20),
         ),
     ).get_result()
 
     return NLUResult(
         entities=response.get("entities", []),
-        relations=response.get("relations", []),
-        sentiment=response.get("sentiment", {}),
-        keywords=response.get("keywords", []),
+        relations=[],
+        sentiment={},
+        keywords=[],
     )
