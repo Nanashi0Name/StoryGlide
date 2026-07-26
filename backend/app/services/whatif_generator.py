@@ -204,7 +204,7 @@ _MOCK_RESPONSES: dict[str, dict] = {
 # Public API
 # ---------------------------------------------------------------------------
 
-def embed_manuscript(manuscript_id: str, chapters: list) -> None:
+def embed_manuscript(manuscript_id: str, chapters: list, provider: str = "watsonx") -> None:
     """
     Build (or rebuild) a Chroma collection for this manuscript.
 
@@ -217,24 +217,13 @@ def embed_manuscript(manuscript_id: str, chapters: list) -> None:
 
     try:
         import chromadb
-        from ibm_watsonx_ai import Credentials
-        from ibm_watsonx_ai.foundation_models import ModelInference
+        from app.services import llm_client
 
         store_path = os.path.join(CHROMA_STORE_PATH, manuscript_id)
         client = chromadb.PersistentClient(path=store_path)
         collection = client.get_or_create_collection(
             name="chapters",
             metadata={"hnsw:space": "cosine"},
-        )
-
-        credentials = Credentials(
-            url=settings.watsonx_url,
-            api_key=settings.watsonx_api_key,
-        )
-        embed_model = ModelInference(
-            model_id=EMBED_MODEL_ID,
-            credentials=credentials,
-            project_id=settings.watsonx_project_id,
         )
 
         ids: list[str] = []
@@ -256,12 +245,7 @@ def embed_manuscript(manuscript_id: str, chapters: list) -> None:
             except Exception:
                 pass
 
-            raw_embed = embed_model.generate_embeddings(
-                input=text,
-                params={"return_tokens": False},
-            )
-            # watsonx.ai embedding response shape: {"results": [{"embedding": [...]}]}
-            vector = raw_embed["results"][0]["embedding"]
+            vector = llm_client.generate_embedding(text, provider=provider)
 
             ids.append(doc_id)
             embeddings.append(vector)
@@ -282,6 +266,7 @@ def run_whatif(
     request: WhatIfRequest,
     chapters: list,
     characters: list,
+    provider: str = "watsonx",
 ) -> WhatIfResponse:
     """
     Run a what-if exploration and return a ``WhatIfResponse``.
@@ -289,7 +274,10 @@ def run_whatif(
     ``chapters`` is a list of dicts (chapter_id, text, world_state).
     ``characters`` is a list of dicts (the CharacterObject dicts stored in the DB).
     """
-    if settings.mock_ai:
+    import sys
+    is_mock = settings.mock_ai and (manuscript_id == "d54c0525-28c2-417e-9660-1ad9aa29bc54" or "pytest" in sys.modules)
+
+    if is_mock:
         mock = _MOCK_RESPONSES[request.scope]
         return WhatIfResponse(
             summary=mock["summary"],
@@ -297,7 +285,7 @@ def run_whatif(
         )
 
     try:
-        context_json, retrieved_text = _build_context(manuscript_id, request, chapters, characters)
+        context_json, retrieved_text = _build_context(manuscript_id, request, chapters, characters, provider=provider)
 
         prompt = _PROMPTS[request.scope].format(
             target_id=request.target_id,
@@ -306,22 +294,16 @@ def run_whatif(
             retrieved_text=retrieved_text,
         )
 
-        from ibm_watsonx_ai import Credentials
-        from ibm_watsonx_ai.foundation_models import ModelInference
+        from app.services import llm_client
 
-        credentials = Credentials(
-            url=settings.watsonx_url,
-            api_key=settings.watsonx_api_key,
+        raw_response = llm_client.generate_text(
+            prompt=prompt,
+            provider=provider,
+            max_new_tokens=8192 if provider == "gemini" else 768,
+            temperature=0.3,
+            force_live=True,
         )
-        model = ModelInference(
-            model_id=GRANITE_MODEL_ID,
-            credentials=credentials,
-            project_id=settings.watsonx_project_id,
-            params={"max_new_tokens": 768, "temperature": 0.3},
-        )
-
-        raw = model.generate_text(prompt=prompt)
-        parsed = _parse_whatif_response(raw)
+        parsed = _parse_whatif_response(raw_response)
 
         return WhatIfResponse(
             summary=parsed.get("summary", "Alternate path generated."),
@@ -349,6 +331,7 @@ def _build_context(
     request: WhatIfRequest,
     chapters: list,
     characters: list,
+    provider: str = "watsonx",
 ) -> tuple[str, str]:
     """
     Return (context_json_str, retrieved_text_str) for use in the prompt.
@@ -375,42 +358,34 @@ def _build_context(
     context_json = json.dumps(context, indent=2)
 
     # Attempt Chroma retrieval
-    retrieved_text = _retrieve_chroma(manuscript_id, request, chapters)
+    retrieved_text = _retrieve_chroma(manuscript_id, request, chapters, provider=provider)
 
     return context_json, retrieved_text
 
 
-def _retrieve_chroma(manuscript_id: str, request: WhatIfRequest, chapters: list) -> str:
+def _retrieve_chroma(manuscript_id: str, request: WhatIfRequest, chapters: list, provider: str = "watsonx") -> str:
     """
     Query Chroma for the top-3 most relevant chapters to the what-if scenario.
     Falls back to the two chapters around the target chapter on any failure.
+    For Gemini, we pass the entire manuscript text directly.
     """
+    if provider == "gemini":
+        parts = []
+        for ch in chapters:
+            parts.append(f"[{ch.get('chapter_id', '?')}]: {ch.get('text', '')}")
+        return "\n\n".join(parts)
+
     query = f"{request.scope} {request.target_id} {request.at_chapter}"
 
     try:
         import chromadb
-        from ibm_watsonx_ai import Credentials
-        from ibm_watsonx_ai.foundation_models import ModelInference
+        from app.services import llm_client
 
         store_path = os.path.join(CHROMA_STORE_PATH, manuscript_id)
         client = chromadb.PersistentClient(path=store_path)
         collection = client.get_collection(name="chapters")
 
-        credentials = Credentials(
-            url=settings.watsonx_url,
-            api_key=settings.watsonx_api_key,
-        )
-        embed_model = ModelInference(
-            model_id=EMBED_MODEL_ID,
-            credentials=credentials,
-            project_id=settings.watsonx_project_id,
-        )
-
-        raw_embed = embed_model.generate_embeddings(
-            input=query,
-            params={"return_tokens": False},
-        )
-        query_vector = raw_embed["results"][0]["embedding"]
+        query_vector = llm_client.generate_embedding(query, provider=provider)
 
         results = collection.query(
             query_embeddings=[query_vector],

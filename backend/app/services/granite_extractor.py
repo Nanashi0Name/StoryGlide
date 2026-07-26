@@ -116,6 +116,9 @@ The output JSON object must follow this exact schema:
     "faction_control": {{"<location_name>": "<status_or_controlling_faction>"}},
     "key_objects": ["<object_name>"],
     "events": ["<brief_event_description>"],
+    "tension_score": <float 0.0–1.0, where 0 is calm and 1 is maximum tension>,
+    "sentiment": "<positive|negative|neutral>",
+    "dominant_emotion": "<fear|anger|joy|sadness|surprise|disgust|anticipation|trust>",
     "extracted_by": "watsonx.granite-4-h-small"
   }},
   "threads": [
@@ -325,9 +328,10 @@ def extract_all(
     chapter_id: str,
     chapter_text: str,
     nlu_result: NLUResult,
+    provider: str = "watsonx",
 ) -> dict:
     """
-    Extract characters, world-state, and threads in a single call.
+    Extract characters, world-state, and narrative threads in a single call.
     Uses stub values when MOCK_AI=true.
     """
     if settings.mock_ai:
@@ -418,19 +422,7 @@ def extract_all(
             "threads": threads,
         }
 
-    from ibm_watsonx_ai import Credentials
-    from ibm_watsonx_ai.foundation_models import ModelInference
-
-    credentials = Credentials(
-        url=settings.watsonx_url,
-        api_key=settings.watsonx_api_key,
-    )
-    model = ModelInference(
-        model_id=GRANITE_MODEL_ID,
-        credentials=credentials,
-        project_id=settings.watsonx_project_id,
-        params={"max_new_tokens": 1536, "temperature": 0},
-    )
+    from app.services import llm_client
 
     prompt = _COMBINED_PROMPT.format(
         chapter_id=chapter_id,
@@ -438,7 +430,12 @@ def extract_all(
         chapter_text=chapter_text[:3000],
     )
 
-    raw_response = model.generate_text(prompt=prompt)
+    raw_response = llm_client.generate_text(
+        prompt=prompt,
+        provider=provider,
+        max_new_tokens=1536,
+        temperature=0.0,
+    )
     return _parse_combined_response(raw_response, chapter_id)
 
 

@@ -91,11 +91,11 @@ export interface WhatIfResponse {
   downstream_impacts: DownstreamImpact[];
 }
 
-export async function uploadManuscript(file: File): Promise<UploadResponse> {
+export async function uploadManuscript(file: File, provider: string = "watsonx"): Promise<UploadResponse> {
   const form = new FormData();
   form.append("file", file);
 
-  const res = await fetch(`${API_URL}/api/manuscripts`, {
+  const res = await fetch(`${API_URL}/api/manuscripts?provider=${provider}`, {
     method: "POST",
     body: form,
   });
@@ -116,24 +116,40 @@ export async function pollStatus(manuscriptId: string): Promise<StatusResponse> 
 export async function fetchCharacters(manuscriptId: string): Promise<CharactersResponse> {
   const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/characters`);
   if (!res.ok) throw new Error(`Characters fetch failed (${res.status})`);
+  if (res.status === 202) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.detail ?? "Characters not ready yet.");
+  }
   return res.json();
 }
 
 export async function fetchContradictions(manuscriptId: string): Promise<ContradictionsResponse> {
   const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/contradictions`);
   if (!res.ok) throw new Error(`Contradictions fetch failed (${res.status})`);
+  if (res.status === 202) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.detail ?? "Contradictions not ready yet.");
+  }
   return res.json();
 }
 
 export async function fetchThreads(manuscriptId: string): Promise<ThreadsResponse> {
   const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/threads`);
   if (!res.ok) throw new Error(`Threads fetch failed (${res.status})`);
+  if (res.status === 202) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.detail ?? "Threads not ready yet.");
+  }
   return res.json();
 }
 
 export async function fetchArc(manuscriptId: string): Promise<ArcResponse> {
   const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/arc`);
   if (!res.ok) throw new Error(`Arc fetch failed (${res.status})`);
+  if (res.status === 202) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.detail ?? "Arc not ready yet.");
+  }
   return res.json();
 }
 
@@ -148,6 +164,10 @@ export interface DashboardResponse {
 export async function fetchDashboard(manuscriptId: string): Promise<DashboardResponse> {
   const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/dashboard`);
   if (!res.ok) throw new Error(`Dashboard fetch failed (${res.status})`);
+  if (res.status === 202) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.detail ?? "Dashboard not ready yet.");
+  }
   return res.json();
 }
 

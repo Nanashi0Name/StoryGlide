@@ -18,6 +18,7 @@ export default function UploadForm() {
   const [statusLabel, setStatusLabel] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [fileSelected, setFileSelected] = useState(false);
+  const [provider, setProvider] = useState<"watsonx" | "gemini">("gemini");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -30,7 +31,7 @@ export default function UploadForm() {
     setStatusLabel("UPLOADING_DRAFT...");
 
     try {
-      const { manuscript_id } = await uploadManuscript(file);
+      const { manuscript_id } = await uploadManuscript(file, provider);
       setStage("processing");
 
       // Poll until done or error
@@ -54,13 +55,58 @@ export default function UploadForm() {
       setStage("error");
       setErrorMsg(err instanceof Error ? err.message : String(err));
     }
-  }, [router]);
+  }, [router, provider]);
 
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Provider selection */}
         <div className="rounded-xl border border-obsidian-border bg-[#0a0f1d] p-6 shadow-inner relative overflow-hidden group">
-          {/* Subtle decoration lines representing radar scanner */}
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-neon-purple/40 to-transparent animate-pulse"></div>
+          
+          <label className="block text-xs font-mono font-semibold text-slate-400 uppercase tracking-widest mb-3">
+            SELECT_AI_COMPUTE_ENGINE
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              type="button"
+              disabled={stage === "uploading" || stage === "processing"}
+              onClick={() => setProvider("gemini")}
+              className={`rounded-xl border p-4 text-left transition-all duration-300 relative overflow-hidden group ${
+                provider === "gemini"
+                  ? "bg-[#121827] border-neon-cyan/50 text-white shadow-glow-cyan/5"
+                  : "border-obsidian-border text-slate-500 hover:text-slate-300 hover:bg-slate-800/10"
+              }`}
+            >
+              <div className="font-mono text-[9px] text-slate-500 tracking-wider">ENGINE_PRIMARY</div>
+              <div className="font-sans text-sm font-bold mt-1">Google Gemini API</div>
+              <div className="text-[10px] font-mono text-slate-500 mt-1">gemini-3.5-flash</div>
+              {provider === "gemini" && (
+                <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-neon-cyan animate-pulse"></div>
+              )}
+            </button>
+            <button
+              type="button"
+              disabled={stage === "uploading" || stage === "processing"}
+              onClick={() => setProvider("watsonx")}
+              className={`rounded-xl border p-4 text-left transition-all duration-300 relative overflow-hidden group ${
+                provider === "watsonx"
+                  ? "bg-[#121827] border-neon-purple/50 text-white shadow-glow-purple/5"
+                  : "border-obsidian-border text-slate-500 hover:text-slate-300 hover:bg-slate-800/10"
+              }`}
+            >
+              <div className="font-mono text-[9px] text-slate-500 tracking-wider">ENGINE_SECONDARY</div>
+              <div className="font-sans text-sm font-bold mt-1">IBM watsonx.ai</div>
+              <div className="text-[10px] font-mono text-slate-500 mt-1">granite-4-h-small</div>
+              {provider === "watsonx" && (
+                <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-neon-purple animate-pulse"></div>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* File Ingestion */}
+        <div className="rounded-xl border border-obsidian-border bg-[#0a0f1d] p-6 shadow-inner relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-neon-cyan/40 to-transparent animate-pulse"></div>
           
           <label className="block text-xs font-mono font-semibold text-slate-400 uppercase tracking-widest mb-3">

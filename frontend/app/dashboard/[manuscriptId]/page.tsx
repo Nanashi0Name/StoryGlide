@@ -72,10 +72,10 @@ export default function DashboardPage() {
     setError("");
     try {
       const data = await fetchDashboard(manuscriptId);
-      setCharacters(data.characters);
-      setContradictions(data.contradictions);
-      setThreads(data.threads);
-      setArc(data.arc);
+      setCharacters(data?.characters || []);
+      setContradictions(data?.contradictions || []);
+      setThreads(data?.threads || []);
+      setArc(data?.arc || []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

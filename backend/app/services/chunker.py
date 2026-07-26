@@ -20,9 +20,7 @@ from docx import Document
 FALLBACK_WORDS = 1500
 
 _HEADING_RE = re.compile(
-    r"^(?:chapter|ch\.?)\s+"          # "chapter" or "ch."
-    r"(?:\d+|[ivxlcdm]+|[a-z]+)"      # Arabic, Roman, or English ordinal
-    r"(?:\s*[:\-–—]?\s*.{0,60})?$",   # optional title after separator
+    r"(?:^(?:chapter|ch\.?)\s+(?:\d+|[ivxlcdm]+|[a-z]+)(?:\s*[:\-–—]?\s*.{0,60})?$)|(?:\n\n[A-Z\s]{4,}\n\n)",
     re.IGNORECASE | re.MULTILINE,
 )
 

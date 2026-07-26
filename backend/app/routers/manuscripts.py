@@ -37,6 +37,7 @@ def _validate_file(file: UploadFile) -> None:
 async def upload_manuscript(
     file: UploadFile,
     background_tasks: BackgroundTasks,
+    provider: str = "watsonx",
     db: AsyncSession = Depends(get_db),
 ):
     """Upload a manuscript. Returns a manuscript_id immediately; processing runs in the background."""
@@ -44,7 +45,7 @@ async def upload_manuscript(
 
     file_bytes = await file.read()
 
-    manuscript = Manuscript(filename=file.filename or "upload", status="processing")
+    manuscript = Manuscript(filename=file.filename or "upload", status="processing", api_provider=provider)
     db.add(manuscript)
     await db.commit()
     await db.refresh(manuscript)
@@ -190,6 +191,7 @@ async def run_whatif_endpoint(
         request=body,
         chapters=chapters,
         characters=manuscript.get_characters(),
+        provider=manuscript.api_provider,
     )
     return response.model_dump()
 
