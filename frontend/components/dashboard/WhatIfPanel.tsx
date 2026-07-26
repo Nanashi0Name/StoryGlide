@@ -1,12 +1,12 @@
 "use client";
 
-import { ArcDataPoint, CharacterObject, DownstreamImpact, WhatIfRequest, WhatIfResponse, runWhatIf } from "@/lib/api";
+import { ChapterObject, CharacterObject, DownstreamImpact, WhatIfRequest, WhatIfResponse, runWhatIf } from "@/lib/api";
 import React, { useState } from "react";
 
 interface Props {
   manuscriptId: string;
   characters: CharacterObject[];
-  arc: ArcDataPoint[];
+  chapters: ChapterObject[];
 }
 
 const SCOPE_OPTIONS = [
@@ -24,7 +24,7 @@ function Spinner() {
   );
 }
 
-export default function WhatIfPanel({ manuscriptId, characters, arc }: Props) {
+export default function WhatIfPanel({ manuscriptId, characters, chapters }: Props) {
   const [scope, setScope] = useState<WhatIfRequest["scope"]>("character_death");
   const [targetId, setTargetId] = useState("");
   const [customTarget, setCustomTarget] = useState("");
@@ -33,8 +33,8 @@ export default function WhatIfPanel({ manuscriptId, characters, arc }: Props) {
   const [result, setResult] = useState<WhatIfResponse | null>(null);
   const [error, setError] = useState("");
 
-  const chapterIds = arc.length > 0
-    ? arc.map((d) => d.chapter_id)
+  const chapterIds = chapters.length > 0
+    ? chapters.map((ch) => ch.chapter_id)
     : characters.flatMap((c) => Object.keys(c.status_by_chapter));
   const uniqueChapters = Array.from(new Set(chapterIds)).sort();
 

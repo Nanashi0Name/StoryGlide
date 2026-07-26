@@ -18,7 +18,6 @@ class Manuscript(Base):
     characters_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     contradictions_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     threads_json: Mapped[str | None] = mapped_column(Text, nullable=True)
-    arc_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -53,13 +52,7 @@ class Manuscript(Base):
     def set_threads(self, threads: list) -> None:
         self.threads_json = json.dumps(threads)
 
-    def get_arc(self) -> list:
-        if self.arc_json is None:
-            return []
-        return json.loads(self.arc_json)
 
-    def set_arc(self, arc: list) -> None:
-        self.arc_json = json.dumps(arc)
 
 
 class Chapter(Base):

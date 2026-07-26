@@ -57,7 +57,7 @@ async def test_extraction_pipeline_success(monkeypatch):
         # Verify characters
         chars = updated_m.get_characters()
         assert len(chars) > 0
-        assert chars[0]["name"] == "Elena Voss"
+        assert chars[0]["name"] == "Sherlock Holmes"
         
         # Verify chapters are saved
         ch_result = await session.execute(
@@ -70,7 +70,6 @@ async def test_extraction_pipeline_success(monkeypatch):
         
         # Verify world state is cached on chapter
         ws = chapters[0].get_world_state()
-        assert "tension_score" in ws
         assert "faction_control" in ws
 
 
@@ -109,4 +108,3 @@ async def test_extraction_pipeline_caching(monkeypatch):
         assert m1_db.status == "done"
         assert m2_db.status == "done"
         assert m1_db.characters_json == m2_db.characters_json
-        assert m1_db.arc_json == m2_db.arc_json

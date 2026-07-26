@@ -5,6 +5,8 @@ import React from "react";
 
 interface Props {
   threads: UnresolvedThread[];
+  selectedId?: string;
+  onSelect?: (id: string) => void;
 }
 
 const TYPE_STYLES: Record<string, string> = {
@@ -21,7 +23,7 @@ const TYPE_LABELS: Record<string, string> = {
   question: "Narrative Question",
 };
 
-export default function ThreadsList({ threads }: Props) {
+export default function ThreadsList({ threads, selectedId, onSelect }: Props) {
   if (threads.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-40 rounded-2xl border border-dashed border-obsidian-border bg-obsidian-card text-sm text-slate-400 gap-2 font-mono">
@@ -36,12 +38,18 @@ export default function ThreadsList({ threads }: Props) {
       {threads.map((thread, idx) => {
         const typeCls = TYPE_STYLES[thread.type] ?? "bg-slate-800 border-slate-700 text-slate-400";
         const typeLabel = TYPE_LABELS[thread.type] ?? thread.type.replace(/_/g, " ");
+        const isSelected = selectedId === thread.id;
 
         return (
           <div
             key={thread.id}
+            onClick={() => onSelect?.(thread.id)}
             style={{ animationDelay: `${idx * 100}ms` }}
-            className="rounded-2xl border border-obsidian-border bg-[#0c111d]/75 p-6 shadow-sm hover:translate-x-1 hover:bg-[#111727] hover:shadow-glow-cyan/5 transition-all duration-300 glass-panel animate-fade-in-up"
+            className={`cursor-pointer rounded-2xl border ${
+              isSelected
+                ? "border-neon-cyan bg-neon-cyan/5 shadow-glow-cyan/10"
+                : "border-obsidian-border bg-[#0c111d]/75"
+            } p-6 shadow-sm hover:translate-x-1 hover:bg-[#111727] hover:shadow-glow-cyan/5 transition-all duration-300 glass-panel animate-fade-in-up`}
           >
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
               <div className="flex-1 space-y-3">

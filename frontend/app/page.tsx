@@ -36,7 +36,7 @@ export default function HomePage() {
                 Ingest Manuscript
               </h2>
               <p className="text-xs text-slate-500 font-mono mt-1">
-                [SUPPORTED_FORMATS: .TXT, .DOCX] // ENGINE: IBM GRANITE-3 &amp; WATSON NLU
+                [SUPPORTED_FORMATS: .TXT, .DOCX] // ENGINE: IBM GRANITE-3
               </p>
             </div>
             
@@ -60,13 +60,13 @@ export default function HomePage() {
                   <span className="font-mono text-[10px] text-neon-cyan tracking-widest uppercase border border-neon-cyan/30 bg-neon-cyan/10 px-2 py-0.5 rounded">
                     DEMO SEED READY
                   </span>
-                  <span className="font-mono text-[10px] text-slate-500">H.G. WELLS</span>
+                  <span className="font-mono text-[10px] text-slate-500">SIR ARTHUR CONAN DOYLE</span>
                 </div>
                 <h3 className="font-serif text-xl font-bold text-white group-hover:text-neon-cyan transition-colors">
-                  Explore The Time Machine
+                  Explore The Speckled Band
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                  Load a pre-compiled structural breakdown of the classic public domain novel to see our contradictions diff, tension arc charts, character network, and what-if exploration engine in action.
+                  Load a pre-compiled structural breakdown of the classic public domain Sherlock Holmes short story to see our contradictions diff, character network, and what-if exploration engine in action.
                 </p>
               </div>
 
@@ -90,12 +90,6 @@ export default function HomePage() {
               <span className="text-neon-green">✔</span>
               <span className="text-slate-300">
                 <strong className="text-white">Structured State Diffs:</strong> Evaluates chapter JSON facts for hard logical errors.
-              </span>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <span className="text-neon-cyan">✔</span>
-              <span className="text-slate-300">
-                <strong className="text-white">Pacing Heatmaps:</strong> Analyzes chapter sizes and scene tension indexes.
               </span>
             </div>
             <div className="flex items-start gap-2.5">

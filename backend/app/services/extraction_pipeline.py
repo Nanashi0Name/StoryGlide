@@ -28,44 +28,53 @@ def generate_mock_gemini_response(chapters: list[chunker_svc.ChapterChunk]) -> d
     """Generate dynamic mock data mirroring the Gemini JSON schema format."""
     chapter_ids = [ch.chapter_id for ch in chapters]
     
-    # Generate pacing arc
-    pacing_arc = []
-    _MOCK_EMOTIONS = ["anticipation", "fear", "anger", "fear", "sadness", "trust"]
-    _MOCK_SENTIMENTS = ["neutral", "negative", "negative", "negative", "negative", "neutral"]
-    for i, ch_id in enumerate(chapter_ids):
-        tension = 0.2 + (i % 5) * 0.15
-        pacing_arc.append({
-            "chapter_id": ch_id,
-            "tension_score": min(1.0, tension),
-            "sentiment": _MOCK_SENTIMENTS[i % len(_MOCK_SENTIMENTS)],
-            "dominant_emotion": _MOCK_EMOTIONS[i % len(_MOCK_EMOTIONS)]
-        })
-        
     # Generate character statuses
-    char_statuses_1 = []
-    char_statuses_2 = []
-    for i, ch_id in enumerate(chapter_ids):
-        char_statuses_1.append({"chapter_id": ch_id, "status": "alive"})
-        status_2 = "absent" if i == 0 else ("alive" if i == 1 else "deceased")
-        char_statuses_2.append({"chapter_id": ch_id, "status": status_2})
+    char_statuses = []
+    for ch_id in chapter_ids:
+        char_statuses.append({"chapter_id": ch_id, "status": "alive"})
         
     characters = [
         {
             "id": "char_001",
-            "name": "Elena Voss",
-            "aliases": ["Elena"],
+            "name": "Sherlock Holmes",
+            "aliases": ["Holmes", "Mr. Sherlock Holmes"],
             "first_appearance": chapter_ids[0] if chapter_ids else "chapter_01",
-            "status_by_chapter": char_statuses_1,
-            "relationships": []
+            "status_by_chapter": char_statuses,
+            "relationships": [
+                {"target_id": "char_002", "type": "friend", "sentiment": "friendly"},
+                {"target_id": "char_004", "type": "enemy", "sentiment": "hostile"}
+            ]
         },
         {
             "id": "char_002",
-            "name": "Marcus Rey",
-            "aliases": ["Marcus"],
-            "first_appearance": chapter_ids[1] if len(chapter_ids) > 1 else "chapter_01",
-            "status_by_chapter": char_statuses_2,
+            "name": "Dr. John Watson",
+            "aliases": ["Watson", "Dr. Watson"],
+            "first_appearance": chapter_ids[0] if chapter_ids else "chapter_01",
+            "status_by_chapter": char_statuses,
             "relationships": [
-                {"target_id": "char_001", "type": "ally", "sentiment": "friendly"}
+                {"target_id": "char_001", "type": "friend", "sentiment": "friendly"}
+            ]
+        },
+        {
+            "id": "char_003",
+            "name": "Helen Stoner",
+            "aliases": ["Helen", "Miss Stoner"],
+            "first_appearance": chapter_ids[0] if chapter_ids else "chapter_01",
+            "status_by_chapter": char_statuses,
+            "relationships": [
+                {"target_id": "char_004", "type": "stepfather", "sentiment": "hostile"},
+                {"target_id": "char_001", "type": "client", "sentiment": "friendly"}
+            ]
+        },
+        {
+            "id": "char_004",
+            "name": "Dr. Grimesby Roylott",
+            "aliases": ["Dr. Roylott", "Roylott", "Grimesby"],
+            "first_appearance": chapter_ids[0] if chapter_ids else "chapter_01",
+            "status_by_chapter": char_statuses,
+            "relationships": [
+                {"target_id": "char_001", "type": "enemy", "sentiment": "hostile"},
+                {"target_id": "char_003", "type": "stepdaughter", "sentiment": "hostile"}
             ]
         }
     ]
@@ -76,9 +85,9 @@ def generate_mock_gemini_response(chapters: list[chunker_svc.ChapterChunk]) -> d
         contradictions.append({
             "id": "flag_001",
             "type": "state_conflict",
-            "entity": "Elena Voss",
+            "entity": "Dr. Grimesby Roylott",
             "conflicting_chapters": [chapter_ids[1], chapter_ids[2]],
-            "description": "Elena Voss was marked deceased in chapter 2, but is later described as alive in chapter 3.",
+            "description": "Dr. Grimesby Roylott is reported to be sleeping at Stoke Moran in Scene 2, but a witness testimony places him in London at the exact same hour in Scene 3.",
             "confidence": 0.95
         })
         
@@ -88,7 +97,14 @@ def generate_mock_gemini_response(chapters: list[chunker_svc.ChapterChunk]) -> d
             "id": "thread_001",
             "type": "chekhov_gun",
             "introduced_chapter": chapter_ids[0] if chapter_ids else "chapter_01",
-            "description": "A locked chest in the corner of the room",
+            "description": "A low whistle heard by Helen's sister right before she died.",
+            "resolved": False
+        },
+        {
+            "id": "thread_002",
+            "type": "question",
+            "introduced_chapter": chapter_ids[1] if len(chapter_ids) > 1 else "chapter_01",
+            "description": "Why was the ventilator installed between two rooms instead of to the outside?",
             "resolved": False
         }
     ]
@@ -99,14 +115,13 @@ def generate_mock_gemini_response(chapters: list[chunker_svc.ChapterChunk]) -> d
         status = "destroyed" if i == 1 else "active"
         world_states.append({
             "chapter_id": ch_id,
-            "faction_control": [{"entity": "Kingdom of Varen", "status": status}]
+            "faction_control": [{"entity": "Stoke Moran Manor", "status": status}]
         })
         
     return {
         "characters": characters,
         "contradictions": contradictions,
         "unresolved_threads": unresolved_threads,
-        "pacing_arc": pacing_arc,
         "world_states": world_states
     }
 
@@ -175,7 +190,6 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                 manuscript.characters_json = cached_manuscript.characters_json
                 manuscript.contradictions_json = cached_manuscript.contradictions_json
                 manuscript.threads_json = cached_manuscript.threads_json
-                manuscript.arc_json = cached_manuscript.arc_json
                 manuscript.status = "done"
                 await db.commit()
                 return
@@ -222,14 +236,14 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
 
                 system_prompt = (
                     "You are a master story editor and continuity tracker. Analyze the provided manuscript. "
-                    "Output a structured JSON object containing: world_state, contradictions, unresolved_threads, pacing_arc."
+                    "Output a structured JSON object containing: world_state, contradictions, unresolved_threads."
                 )
                 user_prompt = (
                     f"Below is the manuscript text split into sections/chapters:\n\n{manuscript_text}\n\n"
                     "Perform a single-pass deep structural analysis. Analyze every section/chapter chronologically.\n"
                     "Identify all characters, their statuses (alive, deceased, or absent) in each chapter, their relationships, "
                     "timeline/continuity contradictions (e.g. location status conflicts or character deaths/resurrections), "
-                    "unresolved narrative threads, and chapter-by-chapter pacing tension scores.\n"
+                    "and unresolved narrative threads.\n"
                     "Return the analysis strictly according to the specified JSON schema."
                 )
 
@@ -314,20 +328,6 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                                 "required": ["id", "type", "description", "introduced_chapter", "resolved"]
                             }
                         },
-                        "pacing_arc": {
-                            "type": "ARRAY",
-                            "description": "Chapter-by-chapter pacing and emotional arc data points",
-                            "items": {
-                                "type": "OBJECT",
-                                "properties": {
-                                    "chapter_id": {"type": "STRING", "description": "Chapter ID (e.g. chapter_01)"},
-                                    "tension_score": {"type": "NUMBER", "description": "Float tension score between 0.0 (calm) and 1.0 (climax)"},
-                                    "sentiment": {"type": "STRING", "description": "positive, negative, or neutral"},
-                                    "dominant_emotion": {"type": "STRING", "description": "fear, anger, joy, sadness, surprise, disgust, anticipation, or trust"}
-                                },
-                                "required": ["chapter_id", "tension_score", "sentiment", "dominant_emotion"]
-                            }
-                        },
                         "world_states": {
                             "type": "ARRAY",
                             "description": "Chapter-by-chapter world states, mapping chapter ID to locations, objects, and faction control status",
@@ -352,7 +352,7 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                             }
                         }
                     },
-                    "required": ["characters", "contradictions", "unresolved_threads", "pacing_arc", "world_states"]
+                    "required": ["characters", "contradictions", "unresolved_threads", "world_states"]
                 }
 
                 from app.services import llm_client
@@ -407,23 +407,6 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                     "faction_control": faction_dict
                 }
 
-            # 3. Transformed pacing_arc data points
-            chapter_word_counts = {ch.chapter_id: ch.word_count for ch in chunks}
-            transformed_arc = []
-            arc_by_chapter = {}
-            for point in analysis_data.get("pacing_arc", []):
-                ch_id = point["chapter_id"]
-                w_count = chapter_word_counts.get(ch_id, 0)
-                point_data = {
-                    "chapter_id": ch_id,
-                    "tension_score": point["tension_score"],
-                    "sentiment": point["sentiment"],
-                    "dominant_emotion": point["dominant_emotion"],
-                    "word_count": w_count
-                }
-                transformed_arc.append(point_data)
-                arc_by_chapter[ch_id] = point_data
-
             # 4. Transformed unresolved threads
             transformed_threads = []
             for thread in analysis_data.get("unresolved_threads", []):
@@ -449,14 +432,8 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
 
             # 6. Cache state on individual chapters
             for ch in db_chapters:
-                # Merge world state and emotional arc details
+                # Merge world state details
                 ch_ws = world_states_by_chapter.get(ch.chapter_id, {"faction_control": {}})
-                arc_point = arc_by_chapter.get(ch.chapter_id, {})
-                if arc_point:
-                    ch_ws["tension_score"] = arc_point["tension_score"]
-                    ch_ws["sentiment"] = arc_point["sentiment"]
-                    ch_ws["dominant_emotion"] = arc_point["dominant_emotion"]
-                
                 ch.set_world_state(ch_ws)
 
                 # Save characters present in this chapter
@@ -475,13 +452,12 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
             manuscript.set_characters(transformed_characters)
             manuscript.set_contradictions(transformed_contradictions)
             manuscript.set_threads(transformed_threads)
-            manuscript.set_arc(transformed_arc)
             manuscript.status = "done"
             await db.commit()
 
             logger.info(
-                "Pipeline: manuscript %s completed via single-pass Gemini call (%d characters, %d contradictions, %d threads, %d arc points)",
-                manuscript_id, len(transformed_characters), len(transformed_contradictions), len(transformed_threads), len(transformed_arc),
+                "Pipeline: manuscript %s completed via single-pass Gemini call (%d characters, %d contradictions, %d threads)",
+                manuscript_id, len(transformed_characters), len(transformed_contradictions), len(transformed_threads),
             )
 
         except Exception as exc:  # noqa: BLE001

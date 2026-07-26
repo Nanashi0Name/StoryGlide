@@ -81,20 +81,6 @@ const STYLESHEET: any[] = [
     } as cytoscape.Css.Node,
   },
   {
-    selector: 'edge[sentiment = "hostile"]',
-    style: {
-      "line-color": "#ff4b72",
-      "target-arrow-color": "#ff4b72",
-    } as cytoscape.Css.Edge,
-  },
-  {
-    selector: 'edge[sentiment = "friendly"]',
-    style: {
-      "line-color": "#05f3ad",
-      "target-arrow-color": "#05f3ad",
-    } as cytoscape.Css.Edge,
-  },
-  {
     selector: "edge",
     style: {
       "width": 2,
@@ -110,6 +96,20 @@ const STYLESHEET: any[] = [
       "text-background-color": "#060913",
       "text-background-opacity": 0.9,
       "text-background-padding": "3px",
+    } as cytoscape.Css.Edge,
+  },
+  {
+    selector: 'edge[sentiment = "hostile"]',
+    style: {
+      "line-color": "#ff4b72",
+      "target-arrow-color": "#ff4b72",
+    } as cytoscape.Css.Edge,
+  },
+  {
+    selector: 'edge[sentiment = "friendly"]',
+    style: {
+      "line-color": "#05f3ad",
+      "target-arrow-color": "#05f3ad",
     } as cytoscape.Css.Edge,
   },
 ];

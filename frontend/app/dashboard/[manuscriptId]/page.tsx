@@ -1,13 +1,11 @@
 "use client";
 
-import ArcChart from "@/components/dashboard/ArcChart";
 import ContradictionsList from "@/components/dashboard/ContradictionsList";
-import PacingHeatmap from "@/components/dashboard/PacingHeatmap";
 import RelationshipGraph from "@/components/dashboard/RelationshipGraph";
 import ThreadsList from "@/components/dashboard/ThreadsList";
 import WhatIfPanel from "@/components/dashboard/WhatIfPanel";
 import {
-  ArcDataPoint,
+  ChapterObject,
   CharacterObject,
   ContradictionFlag,
   UnresolvedThread,
@@ -17,11 +15,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 
-type Tab = "overview" | "arc" | "contradictions" | "threads" | "whatif";
+type Tab = "overview" | "contradictions" | "threads" | "whatif";
 
 const TABS: { id: Tab; label: string; code: string }[] = [
   { id: "overview", label: "Overview", code: "SYS_OVERVIEW" },
-  { id: "arc", label: "Emotional Arc", code: "PACING_ARC" },
   { id: "contradictions", label: "Contradictions", code: "CONFLICTS_DIFF" },
   { id: "threads", label: "Threads", code: "UNRESOLVED_LOG" },
   { id: "whatif", label: "What-If", code: "FLIGHT_SIM" },
@@ -64,7 +61,11 @@ export default function DashboardPage() {
   const [characters, setCharacters] = useState<CharacterObject[]>([]);
   const [contradictions, setContradictions] = useState<ContradictionFlag[]>([]);
   const [threads, setThreads] = useState<UnresolvedThread[]>([]);
-  const [arc, setArc] = useState<ArcDataPoint[]>([]);
+  const [chapters, setChapters] = useState<ChapterObject[]>([]);
+
+  const [selectedContradictionId, setSelectedContradictionId] = useState<string>("");
+  const [selectedThreadId, setSelectedThreadId] = useState<string>("");
+  const [highlightedChapters, setHighlightedChapters] = useState<string[]>([]);
 
   const loadAll = useCallback(async () => {
     if (!manuscriptId) return;
@@ -75,7 +76,7 @@ export default function DashboardPage() {
       setCharacters(data?.characters || []);
       setContradictions(data?.contradictions || []);
       setThreads(data?.threads || []);
-      setArc(data?.arc || []);
+      setChapters(data?.chapters || []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -86,6 +87,12 @@ export default function DashboardPage() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  useEffect(() => {
+    setSelectedContradictionId("");
+    setSelectedThreadId("");
+    setHighlightedChapters([]);
+  }, [activeTab]);
 
   return (
     <div className="space-y-6">
@@ -216,37 +223,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ── Arc Tab ────────────────────────────────────────────────── */}
-          {activeTab === "arc" && (
-            <div className="space-y-8 animate-fade-in-up">
-              <section className="space-y-2">
-                <SectionHeading code="EMO_ARC_TENSION">Emotional Arc</SectionHeading>
-                <p className="text-sm text-slate-400">
-                  Tension score per chapter (0 = calm, 1 = maximum tension). Hover dots for sentiment details. The dashed line represents the ideal reference arc structure.
-                </p>
-                {arc.length === 0 ? (
-                  <EmptyState message="No arc data available — the manuscript may still be processing." />
-                ) : (
-                  <div className="rounded-2xl border border-obsidian-border bg-obsidian-card p-6 glass-panel">
-                    <ArcChart arc={arc} />
-                  </div>
-                )}
-              </section>
-
-              <section className="space-y-2">
-                <SectionHeading code="PACE_HEATMAP">Pacing Heatmap</SectionHeading>
-                <p className="text-sm text-slate-400">
-                  Word density heat distribution. Deeper neon blocks highlight denser pacing intervals.
-                </p>
-                {arc.length === 0 ? (
-                  <EmptyState message="No pacing data available yet." />
-                ) : (
-                  <PacingHeatmap arc={arc} />
-                )}
-              </section>
-            </div>
-          )}
-
           {/* ── Contradictions Tab ─────────────────────────────────────── */}
           {activeTab === "contradictions" && (
             <div className="space-y-4 animate-fade-in-up">
@@ -257,12 +233,67 @@ export default function DashboardPage() {
                 <span className="font-mono text-xs text-slate-500">ENGINE: Fact State Diff</span>
               </div>
               <p className="text-sm text-slate-400">
-                The structured state-diff engine cross-checks facts extracted in SQLite databases to capture timeline integrity issues.
+                The structured state-diff engine cross-checks facts extracted in SQLite databases to capture timeline integrity issues. Click a card to highlight the conflicting chapters.
               </p>
               {contradictions.length === 0 ? (
                 <EmptyState message="No contradictions detected — your manuscript's world state is consistent." />
               ) : (
-                <ContradictionsList contradictions={contradictions} />
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left: Contradiction Cards */}
+                  <div className="lg:col-span-5 space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                    <ContradictionsList
+                      contradictions={contradictions}
+                      selectedId={selectedContradictionId}
+                      onSelect={(id) => {
+                        setSelectedContradictionId(id);
+                        const cond = contradictions.find(c => c.id === id);
+                        if (cond && cond.conflicting_chapters.length > 0) {
+                          setHighlightedChapters(cond.conflicting_chapters);
+                          const el = document.getElementById(`chapter-card-${cond.conflicting_chapters[0]}`);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                        } else {
+                          setHighlightedChapters([]);
+                        }
+                      }}
+                    />
+                  </div>
+                  {/* Right: Chapters list */}
+                  <div className="lg:col-span-7 space-y-4 max-h-[600px] overflow-y-auto pr-2 border-l border-obsidian-border/50 pl-6">
+                    <div className="font-mono text-xs text-slate-500 uppercase tracking-widest mb-2">[SYS_STATE: CHAPTERS_TELEMETRY]</div>
+                    <div className="space-y-4">
+                      {chapters.map((ch) => {
+                        const isHighlighted = highlightedChapters.includes(ch.chapter_id);
+                        return (
+                          <div
+                            key={ch.chapter_id}
+                            id={`chapter-card-${ch.chapter_id}`}
+                            className={`rounded-xl border p-5 bg-[#090d16]/80 transition-all duration-300 relative ${
+                              isHighlighted
+                                ? "border-neon-rose bg-neon-rose/5 shadow-glow-rose/10"
+                                : "border-obsidian-border hover:border-slate-700"
+                            }`}
+                          >
+                            {isHighlighted && (
+                              <div className="absolute -top-2.5 right-4 font-mono text-[9px] font-bold text-neon-rose border border-neon-rose bg-[#0c111d] px-2 py-0.5 rounded uppercase tracking-wider animate-pulse">
+                                [CONFLICTING STATE]
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="font-mono text-xs text-neon-cyan uppercase tracking-wider">
+                                {ch.chapter_id.replace(/_/g, " ")}
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-mono">{ch.word_count} words</span>
+                            </div>
+                            <h4 className="font-serif text-base font-bold text-white mb-2">{ch.title}</h4>
+                            <p className="text-xs text-slate-400 font-sans leading-relaxed line-clamp-6 overflow-hidden hover:line-clamp-none transition-all duration-300 whitespace-pre-line">
+                              {ch.text}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -277,12 +308,67 @@ export default function DashboardPage() {
                 <span className="font-mono text-xs text-slate-500">ENGINE: Promise Tracker</span>
               </div>
               <p className="text-sm text-slate-400">
-                List of planted elements (Chekhov&apos;s guns, foreshadows, questions) that haven&apos;t met resolution events.
+                List of planted elements (Chekhov&apos;s guns, foreshadows, questions) that haven&apos;t met resolution events. Click a card to highlight where the thread was introduced.
               </p>
               {threads.length === 0 ? (
                 <EmptyState message="No unresolved threads detected — all planted elements appear to be resolved." />
               ) : (
-                <ThreadsList threads={threads} />
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left: Thread Cards */}
+                  <div className="lg:col-span-5 space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                    <ThreadsList
+                      threads={threads}
+                      selectedId={selectedThreadId}
+                      onSelect={(id) => {
+                        setSelectedThreadId(id);
+                        const th = threads.find(t => t.id === id);
+                        if (th && th.introduced_chapter) {
+                          setHighlightedChapters([th.introduced_chapter]);
+                          const el = document.getElementById(`chapter-card-${th.introduced_chapter}`);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                        } else {
+                          setHighlightedChapters([]);
+                        }
+                      }}
+                    />
+                  </div>
+                  {/* Right: Chapters list */}
+                  <div className="lg:col-span-7 space-y-4 max-h-[600px] overflow-y-auto pr-2 border-l border-obsidian-border/50 pl-6">
+                    <div className="font-mono text-xs text-slate-500 uppercase tracking-widest mb-2">[SYS_STATE: CHAPTERS_TELEMETRY]</div>
+                    <div className="space-y-4">
+                      {chapters.map((ch) => {
+                        const isHighlighted = highlightedChapters.includes(ch.chapter_id);
+                        return (
+                          <div
+                            key={ch.chapter_id}
+                            id={`chapter-card-${ch.chapter_id}`}
+                            className={`rounded-xl border p-5 bg-[#090d16]/80 transition-all duration-300 relative ${
+                              isHighlighted
+                                ? "border-neon-cyan bg-neon-cyan/5 shadow-glow-cyan/10"
+                                : "border-obsidian-border hover:border-slate-700"
+                            }`}
+                          >
+                            {isHighlighted && (
+                              <div className="absolute -top-2.5 right-4 font-mono text-[9px] font-bold text-neon-cyan border border-neon-cyan bg-[#0c111d] px-2 py-0.5 rounded uppercase tracking-wider animate-pulse">
+                                [SOURCE INTRODUCED]
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="font-mono text-xs text-neon-cyan uppercase tracking-wider">
+                                {ch.chapter_id.replace(/_/g, " ")}
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-mono">{ch.word_count} words</span>
+                            </div>
+                            <h4 className="font-serif text-base font-bold text-white mb-2">{ch.title}</h4>
+                            <p className="text-xs text-slate-400 font-sans leading-relaxed line-clamp-6 overflow-hidden hover:line-clamp-none transition-all duration-300 whitespace-pre-line">
+                              {ch.text}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -300,7 +386,7 @@ export default function DashboardPage() {
               <WhatIfPanel
                 manuscriptId={manuscriptId}
                 characters={characters}
-                arc={arc}
+                chapters={chapters}
               />
             </div>
           )}

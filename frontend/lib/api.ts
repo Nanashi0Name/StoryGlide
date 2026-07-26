@@ -143,14 +143,11 @@ export async function fetchThreads(manuscriptId: string): Promise<ThreadsRespons
   return res.json();
 }
 
-export async function fetchArc(manuscriptId: string): Promise<ArcResponse> {
-  const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/arc`);
-  if (!res.ok) throw new Error(`Arc fetch failed (${res.status})`);
-  if (res.status === 202) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body?.detail ?? "Arc not ready yet.");
-  }
-  return res.json();
+export interface ChapterObject {
+  chapter_id: string;
+  title: string;
+  text: string;
+  word_count: number;
 }
 
 export interface DashboardResponse {
@@ -158,7 +155,7 @@ export interface DashboardResponse {
   characters: CharacterObject[];
   contradictions: ContradictionFlag[];
   threads: UnresolvedThread[];
-  arc: ArcDataPoint[];
+  chapters: ChapterObject[];
 }
 
 export async function fetchDashboard(manuscriptId: string): Promise<DashboardResponse> {

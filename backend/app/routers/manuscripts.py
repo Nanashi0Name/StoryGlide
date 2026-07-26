@@ -118,19 +118,7 @@ async def get_threads(
     return {"manuscript_id": manuscript.id, "threads": manuscript.get_threads()}
 
 
-@router.get("/manuscripts/{manuscript_id}/arc")
-async def get_arc(
-    manuscript_id: str,
-    db: AsyncSession = Depends(get_db),
-):
-    """Return emotional arc data points (available when status is 'done')."""
-    manuscript = await _fetch_or_404(db, manuscript_id)
-    if manuscript.status != "done":
-        raise HTTPException(
-            status_code=202,
-            detail=f"Processing not complete yet. Current status: {manuscript.status}",
-        )
-    return {"manuscript_id": manuscript.id, "arc": manuscript.get_arc()}
+
 
 
 @router.get("/manuscripts/{manuscript_id}/dashboard")
@@ -145,12 +133,27 @@ async def get_dashboard(
             status_code=202,
             detail=f"Processing not complete yet. Current status: {manuscript.status}",
         )
+    result = await db.execute(
+        select(Chapter).where(Chapter.manuscript_id == manuscript_id)
+    )
+    db_chapters = list(result.scalars().all())
+    db_chapters = sorted(db_chapters, key=lambda c: c.id)
+
+    chapters = [
+        {
+            "chapter_id": ch.chapter_id,
+            "title": ch.title,
+            "text": ch.text,
+            "word_count": ch.word_count,
+        }
+        for ch in db_chapters
+    ]
     return {
         "manuscript_id": manuscript.id,
         "characters": manuscript.get_characters(),
         "contradictions": manuscript.get_contradictions(),
         "threads": manuscript.get_threads(),
-        "arc": manuscript.get_arc(),
+        "chapters": chapters,
     }
 
 

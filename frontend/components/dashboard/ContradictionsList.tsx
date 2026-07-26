@@ -5,6 +5,8 @@ import React from "react";
 
 interface Props {
   contradictions: ContradictionFlag[];
+  selectedId?: string;
+  onSelect?: (id: string) => void;
 }
 
 interface VisualTheme {
@@ -43,7 +45,7 @@ function confidenceTheme(c: number): VisualTheme {
   };
 }
 
-export default function ContradictionsList({ contradictions }: Props) {
+export default function ContradictionsList({ contradictions, selectedId, onSelect }: Props) {
   if (contradictions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-40 rounded-2xl border border-dashed border-obsidian-border bg-obsidian-card text-sm text-slate-400 gap-2 font-mono">
@@ -57,11 +59,17 @@ export default function ContradictionsList({ contradictions }: Props) {
     <div className="space-y-4">
       {contradictions.map((flag, idx) => {
         const theme = confidenceTheme(flag.confidence);
+        const isSelected = selectedId === flag.id;
         return (
           <div
             key={flag.id}
+            onClick={() => onSelect?.(flag.id)}
             style={{ animationDelay: `${idx * 100}ms` }}
-            className={`rounded-2xl border ${theme.border} bg-[#0c111d]/75 p-6 shadow-sm hover:translate-x-1 hover:bg-[#111727] ${theme.shadow} transition-all duration-300 glass-panel animate-fade-in-up`}
+            className={`cursor-pointer rounded-2xl border ${
+              isSelected
+                ? "border-neon-rose bg-neon-rose/5 shadow-glow-rose/10"
+                : `${theme.border} bg-[#0c111d]/75`
+            } p-6 shadow-sm hover:translate-x-1 hover:bg-[#111727] ${theme.shadow} transition-all duration-300 glass-panel animate-fade-in-up`}
           >
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
               <div className="flex-1 space-y-3">

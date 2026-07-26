@@ -64,9 +64,17 @@ async def _insert_done_manuscript() -> str:
                                 "description": "Destroyed then active", "confidence": 0.9}])
         m.set_threads([{"id": "thread_001", "type": "chekhov_gun", "introduced_chapter": "chapter_02",
                         "description": "Locked chest", "resolved": False}])
-        m.set_arc([{"chapter_id": "chapter_01", "tension_score": 0.5,
-                    "sentiment": "neutral", "dominant_emotion": "anticipation", "word_count": 800}])
         session.add(m)
+        await session.commit()
+        from app.models.manuscript import Chapter
+        ch = Chapter(
+            manuscript_id=m.id,
+            chapter_id="chapter_01",
+            title="Chapter 1",
+            word_count=800,
+            text="Once upon a time in a test case..."
+        )
+        session.add(ch)
         await session.commit()
         await session.refresh(m)
         return m.id
@@ -87,7 +95,7 @@ async def test_dashboard_returns_all_four_keys():
     assert "characters" in body
     assert "contradictions" in body
     assert "threads" in body
-    assert "arc" in body
+    assert "chapters" in body
 
 
 @pytest.mark.asyncio
@@ -101,8 +109,8 @@ async def test_dashboard_data_correct():
     assert len(body["contradictions"]) == 1
     assert len(body["threads"]) == 1
     assert body["threads"][0]["resolved"] is False
-    assert len(body["arc"]) == 1
-    assert body["arc"][0]["tension_score"] == 0.5
+    assert len(body["chapters"]) == 1
+    assert body["chapters"][0]["title"] == "Chapter 1"
 
 
 @pytest.mark.asyncio
