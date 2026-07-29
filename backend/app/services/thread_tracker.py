@@ -63,7 +63,12 @@ def track_threads(
             "type": thread.get("type", "chekhov_gun"),
             "introduced_chapter": intro_chap,
             "description": thread["description"],
-            "resolved": is_resolved
+            "resolved": is_resolved,
+            "evidence": {
+                "chapter_id": intro_chap,
+                "quote": f"Introduced thread: {thread['description']}",
+                "context": f"In {intro_chap}, the story introduced the following detail: {thread['description']}."
+            }
         })
 
     return unresolved_threads

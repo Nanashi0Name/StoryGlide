@@ -35,6 +35,12 @@ export interface CharacterObject {
   extracted_by: string;
 }
 
+export interface ContradictionEvidence {
+  chapter_id: string;
+  quote: string;
+  context: string;
+}
+
 export interface ContradictionFlag {
   id: string;
   type: string;
@@ -42,11 +48,18 @@ export interface ContradictionFlag {
   conflicting_chapters: string[];
   description: string;
   confidence: number;
+  evidence?: ContradictionEvidence[];
 }
 
 export interface ContradictionsResponse {
   manuscript_id: string;
   contradictions: ContradictionFlag[];
+}
+
+export interface ThreadEvidence {
+  chapter_id: string;
+  quote: string;
+  context: string;
 }
 
 export interface UnresolvedThread {
@@ -55,6 +68,7 @@ export interface UnresolvedThread {
   introduced_chapter: string;
   description: string;
   resolved: boolean;
+  evidence?: ThreadEvidence;
 }
 
 export interface ThreadsResponse {
@@ -89,6 +103,19 @@ export interface DownstreamImpact {
 export interface WhatIfResponse {
   summary: string;
   downstream_impacts: DownstreamImpact[];
+}
+
+export interface WhatIfProposal {
+  id: string;
+  title: string;
+  teaser: string;
+  scope: "character_death" | "relationship_change" | "event_removal";
+  target_id: string;
+  at_chapter: string;
+}
+
+export interface WhatIfProposeResponse {
+  proposals: WhatIfProposal[];
 }
 
 export async function uploadManuscript(file: File, provider: string = "watsonx"): Promise<UploadResponse> {
@@ -178,5 +205,31 @@ export async function runWhatIf(
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`What-if request failed (${res.status})`);
+  return res.json();
+}
+
+export async function proposeWhatIf(
+  manuscriptId: string,
+  prompt: string
+): Promise<WhatIfProposeResponse> {
+  const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/whatif/propose`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!res.ok) throw new Error(`What-if proposal failed (${res.status})`);
+  return res.json();
+}
+
+export async function confirmWhatIf(
+  manuscriptId: string,
+  proposal: WhatIfProposal
+): Promise<WhatIfResponse> {
+  const res = await fetch(`${API_URL}/api/manuscripts/${manuscriptId}/whatif/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ proposal }),
+  });
+  if (!res.ok) throw new Error(`What-if confirm failed (${res.status})`);
   return res.json();
 }

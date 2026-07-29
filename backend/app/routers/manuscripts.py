@@ -10,7 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.manuscript import Chapter, Manuscript
 from app.services import extraction_pipeline
-from app.services.whatif_generator import WhatIfRequest, run_whatif
+from app.services.whatif_generator import (
+    WhatIfRequest,
+    run_whatif,
+    WhatIfProposal,
+    WhatIfProposeResponse,
+    generate_proposals,
+)
 
 router = APIRouter(tags=["manuscripts"])
 
@@ -192,6 +198,104 @@ async def run_whatif_endpoint(
         run_whatif,
         manuscript_id=manuscript_id,
         request=body,
+        chapters=chapters,
+        characters=manuscript.get_characters(),
+        provider=manuscript.api_provider,
+    )
+    return response.model_dump()
+
+
+class WhatIfProposeRequest(BaseModel):
+    prompt: str
+
+
+@router.post("/manuscripts/{manuscript_id}/whatif/propose")
+async def whatif_propose_endpoint(
+    manuscript_id: str,
+    body: WhatIfProposeRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate 3 what-if trajectory proposals based on user prompt."""
+    manuscript = await _fetch_or_404(db, manuscript_id)
+    if manuscript.status != "done":
+        raise HTTPException(
+            status_code=202,
+            detail=f"Processing not complete yet. Current status: {manuscript.status}",
+        )
+
+    # Load chapters and characters from DB
+    result = await db.execute(
+        select(Chapter).where(Chapter.manuscript_id == manuscript_id)
+    )
+    db_chapters = list(result.scalars().all())
+    db_chapters = sorted(db_chapters, key=lambda c: c.id)
+
+    chapters = [
+        {
+            "chapter_id": ch.chapter_id,
+            "text": ch.text,
+            "word_count": ch.word_count,
+        }
+        for ch in db_chapters
+    ]
+
+    response = await asyncio.to_thread(
+        generate_proposals,
+        manuscript_id=manuscript_id,
+        prompt=body.prompt,
+        chapters=chapters,
+        characters=manuscript.get_characters(),
+        provider=manuscript.api_provider,
+    )
+    return response.model_dump()
+
+
+class WhatIfConfirmRequest(BaseModel):
+    proposal: WhatIfProposal
+
+
+@router.post("/manuscripts/{manuscript_id}/whatif/confirm")
+async def whatif_confirm_endpoint(
+    manuscript_id: str,
+    body: WhatIfConfirmRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Expand a selected what-if proposal into a full narrative and impacts."""
+    manuscript = await _fetch_or_404(db, manuscript_id)
+    if manuscript.status != "done":
+        raise HTTPException(
+            status_code=202,
+            detail=f"Processing not complete yet. Current status: {manuscript.status}",
+        )
+
+    # Load chapters and characters from DB
+    result = await db.execute(
+        select(Chapter).where(Chapter.manuscript_id == manuscript_id)
+    )
+    db_chapters = list(result.scalars().all())
+    db_chapters = sorted(db_chapters, key=lambda c: c.id)
+
+    chapters = [
+        {
+            "chapter_id": ch.chapter_id,
+            "text": ch.text,
+            "word_count": ch.word_count,
+            "world_state": ch.get_world_state(),
+        }
+        for ch in db_chapters
+    ]
+
+    # Map the proposal parameters to WhatIfRequest for run_whatif
+    whatif_req = WhatIfRequest(
+        scope=body.proposal.scope,
+        target_id=body.proposal.target_id,
+        at_chapter=body.proposal.at_chapter,
+    )
+
+    response = await asyncio.to_thread(
+        run_whatif,
+        manuscript_id=manuscript_id,
+        request=whatif_req,
         chapters=chapters,
         characters=manuscript.get_characters(),
         provider=manuscript.api_provider,

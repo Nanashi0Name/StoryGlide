@@ -24,7 +24,7 @@ from app.services import chunker as chunker_svc
 logger = logging.getLogger(__name__)
 
 
-def generate_mock_gemini_response(chapters: list[chunker_svc.ChapterChunk]) -> dict:
+def generate_mock_gemini_response(chapters: list[chunker_svc.ChapterChunk], manuscript_id: str = None) -> dict:
     """Generate dynamic mock data mirroring the Gemini JSON schema format."""
     chapter_ids = [ch.chapter_id for ch in chapters]
     
@@ -88,7 +88,19 @@ def generate_mock_gemini_response(chapters: list[chunker_svc.ChapterChunk]) -> d
             "entity": "Dr. Grimesby Roylott",
             "conflicting_chapters": [chapter_ids[1], chapter_ids[2]],
             "description": "Dr. Grimesby Roylott is reported to be sleeping at Stoke Moran in Scene 2, but a witness testimony places him in London at the exact same hour in Scene 3.",
-            "confidence": 0.95
+            "confidence": 0.95,
+            "evidence": [
+                {
+                    "chapter_id": chapter_ids[1],
+                    "quote": "Roylott retired early, claiming he would sleep soundly through the night at Stoke Moran.",
+                    "context": "At nine o'clock, Dr. Grimesby Roylott retired early, claiming he would sleep soundly through the night at Stoke Moran. The manor was quiet, save for the wind."
+                },
+                {
+                    "chapter_id": chapter_ids[2],
+                    "quote": "Mr. Roylott was seen under the gas lamp in London at eleven that evening.",
+                    "context": "A reliable witness swore that Mr. Roylott was seen under the gas lamp in London at eleven that evening, far from his country estate."
+                }
+            ]
         })
         
     # Unresolved threads
@@ -98,14 +110,24 @@ def generate_mock_gemini_response(chapters: list[chunker_svc.ChapterChunk]) -> d
             "type": "chekhov_gun",
             "introduced_chapter": chapter_ids[0] if chapter_ids else "chapter_01",
             "description": "A low whistle heard by Helen's sister right before she died.",
-            "resolved": False
+            "resolved": False,
+            "evidence": {
+                "chapter_id": chapter_ids[0] if chapter_ids else "chapter_01",
+                "quote": "Suddenly, in the dead of the night, she heard a low, clear whistle.",
+                "context": "It was three in the morning when the event occurred. Suddenly, in the dead of the night, she heard a low, clear whistle, though no one was near."
+            }
         },
         {
             "id": "thread_002",
             "type": "question",
             "introduced_chapter": chapter_ids[1] if len(chapter_ids) > 1 else "chapter_01",
             "description": "Why was the ventilator installed between two rooms instead of to the outside?",
-            "resolved": False
+            "resolved": False,
+            "evidence": {
+                "chapter_id": chapter_ids[1] if len(chapter_ids) > 1 else "chapter_01",
+                "quote": "The ventilator does not open to the outer air, but into the next room.",
+                "context": "Holmes examined the wall closely. The ventilator does not open to the outer air, but into the next room, a most singular arrangement."
+            }
         }
     ]
     
@@ -222,7 +244,7 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
 
             if is_mock:
                 logger.info("Pipeline: Mocking Gemini response...")
-                analysis_data = generate_mock_gemini_response(chunks)
+                analysis_data = generate_mock_gemini_response(chunks, manuscript_id=manuscript_id)
             else:
                 logger.info("Pipeline: Sending manuscript to Gemini API...")
                 formatted_chapters = []
@@ -308,9 +330,22 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                                         "description": "List of chapter IDs that conflict (e.g. ['chapter_01', 'chapter_03'])"
                                     },
                                     "description": {"type": "STRING", "description": "Clear explanation of the contradiction"},
-                                    "confidence": {"type": "NUMBER", "description": "Confidence score between 0.0 and 1.0"}
+                                    "confidence": {"type": "NUMBER", "description": "Confidence score between 0.0 and 1.0"},
+                                    "evidence": {
+                                        "type": "ARRAY",
+                                        "description": "List of evidence/citations corresponding to each of the conflicting chapters",
+                                        "items": {
+                                            "type": "OBJECT",
+                                            "properties": {
+                                                "chapter_id": {"type": "STRING", "description": "The chapter ID where this evidence is located"},
+                                                "quote": {"type": "STRING", "description": "The exact specific sentence/s where this information was found in the chapter"},
+                                                "context": {"type": "STRING", "description": "The surrounding paragraph or immediate context around the quote"}
+                                            },
+                                            "required": ["chapter_id", "quote", "context"]
+                                        }
+                                    }
                                 },
-                                "required": ["id", "type", "entity", "conflicting_chapters", "description", "confidence"]
+                                "required": ["id", "type", "entity", "conflicting_chapters", "description", "confidence", "evidence"]
                             }
                         },
                         "unresolved_threads": {
@@ -323,9 +358,19 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
                                     "type": {"type": "STRING", "description": "chekhov_gun, promise, foreshadowing, or question"},
                                     "description": {"type": "STRING", "description": "Description of the thread or item"},
                                     "introduced_chapter": {"type": "STRING", "description": "Chapter ID where the thread is introduced (e.g. chapter_01)"},
-                                    "resolved": {"type": "BOOLEAN", "description": "Whether the thread is resolved by the end of the manuscript"}
+                                    "resolved": {"type": "BOOLEAN", "description": "Whether the thread is resolved by the end of the manuscript"},
+                                    "evidence": {
+                                        "type": "OBJECT",
+                                        "description": "Evidence showing where the thread was introduced",
+                                        "properties": {
+                                            "chapter_id": {"type": "STRING", "description": "The chapter ID where the thread was introduced"},
+                                            "quote": {"type": "STRING", "description": "The exact specific sentence/s where this thread was introduced in the chapter"},
+                                            "context": {"type": "STRING", "description": "The surrounding paragraph or immediate context around the quote"}
+                                        },
+                                        "required": ["chapter_id", "quote", "context"]
+                                    }
                                 },
-                                "required": ["id", "type", "description", "introduced_chapter", "resolved"]
+                                "required": ["id", "type", "description", "introduced_chapter", "resolved", "evidence"]
                             }
                         },
                         "world_states": {
@@ -410,25 +455,31 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
             # 4. Transformed unresolved threads
             transformed_threads = []
             for thread in analysis_data.get("unresolved_threads", []):
-                transformed_threads.append({
+                thread_item = {
                     "id": thread["id"],
                     "type": thread["type"],
                     "introduced_chapter": thread["introduced_chapter"],
                     "description": thread["description"],
                     "resolved": thread["resolved"]
-                })
+                }
+                if "evidence" in thread:
+                    thread_item["evidence"] = thread["evidence"]
+                transformed_threads.append(thread_item)
 
             # 5. Transformed contradictions
             transformed_contradictions = []
             for flag in analysis_data.get("contradictions", []):
-                transformed_contradictions.append({
+                contradiction_item = {
                     "id": flag["id"],
                     "type": flag["type"],
                     "entity": flag["entity"],
                     "conflicting_chapters": flag["conflicting_chapters"],
                     "description": flag["description"],
                     "confidence": flag["confidence"]
-                })
+                }
+                if "evidence" in flag:
+                    contradiction_item["evidence"] = flag["evidence"]
+                transformed_contradictions.append(contradiction_item)
 
             # 6. Cache state on individual chapters
             for ch in db_chapters:

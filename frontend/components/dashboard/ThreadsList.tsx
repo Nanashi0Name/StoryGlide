@@ -23,6 +23,36 @@ const TYPE_LABELS: Record<string, string> = {
   question: "Narrative Question",
 };
 
+interface HighlightProps {
+  context: string;
+  quote: string;
+  highlightClass: string;
+}
+
+function HighlightQuote({ context, quote, highlightClass }: HighlightProps) {
+  if (!context) return null;
+  if (!quote) return <span>{context}</span>;
+
+  const idx = context.toLowerCase().indexOf(quote.toLowerCase());
+  if (idx === -1) {
+    return <span>{context}</span>;
+  }
+
+  const prefix = context.substring(0, idx);
+  const match = context.substring(idx, idx + quote.length);
+  const suffix = context.substring(idx + quote.length);
+
+  return (
+    <span>
+      {prefix}
+      <span className={`${highlightClass} px-1.5 py-0.5 rounded font-medium bg-opacity-20`}>
+        {match}
+      </span>
+      {suffix}
+    </span>
+  );
+}
+
 export default function ThreadsList({ threads, selectedId, onSelect }: Props) {
   if (threads.length === 0) {
     return (
@@ -69,6 +99,21 @@ export default function ThreadsList({ threads, selectedId, onSelect }: Props) {
                     {thread.introduced_chapter.toUpperCase()}
                   </code>
                 </div>
+
+                {/* Evidence Context */}
+                {isSelected && thread.evidence && (
+                  <div className="mt-4 pt-4 border-t border-obsidian-border/50 space-y-2 animate-fade-in">
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Context Citation:</div>
+                    <div className="space-y-1.5 pl-3 border-l-2 border-neon-cyan/40">
+                      <div className="text-[9px] font-mono uppercase tracking-wider text-neon-cyan">
+                        Source: {thread.evidence.chapter_id.replace(/_/g, " ").toUpperCase()}
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed italic bg-black/40 rounded-lg p-3 border border-obsidian-border/30">
+                        &ldquo;... <HighlightQuote context={thread.evidence.context} quote={thread.evidence.quote} highlightClass="bg-neon-cyan/20 text-neon-cyan border-b border-neon-cyan" /> ...&rdquo;
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
               
               {/* Status pill */}

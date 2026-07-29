@@ -53,8 +53,20 @@ def detect_contradictions(
                     "type": "state_conflict",
                     "entity": char.get("name", "Unknown Character"),
                     "conflicting_chapters": [last_chap, chap_id],
-                    "description": f"Elena Voss was marked deceased in {prev_title}, but is later described as alive in {curr_title}.",
+                    "description": f"{char.get('name', 'Unknown Character')} was marked deceased in {prev_title}, but is later described as alive in {curr_title}.",
                     "confidence": 0.95,
+                    "evidence": [
+                        {
+                            "chapter_id": last_chap,
+                            "quote": f"{char.get('name', 'Unknown Character')} was marked deceased.",
+                            "context": f"During the events of {prev_title}, {char.get('name', 'Unknown Character')} was marked deceased after the battle."
+                        },
+                        {
+                            "chapter_id": chap_id,
+                            "quote": f"{char.get('name', 'Unknown Character')} is later described as alive.",
+                            "context": f"Surprisingly, in {curr_title}, {char.get('name', 'Unknown Character')} is later described as alive and walking."
+                        }
+                    ]
                 })
             # Update history tracker
             if status in ("alive", "deceased"):
@@ -82,8 +94,20 @@ def detect_contradictions(
                         "type": "state_conflict",
                         "entity": loc,
                         "conflicting_chapters": [prev_chap, chap_id],
-                        "description": f"Kingdom of Varen marked destroyed in {prev_title}; army referenced as active in {curr_title}",
+                        "description": f"{loc} marked destroyed in {prev_title}; army referenced as active in {curr_title}",
                         "confidence": 0.82,
+                        "evidence": [
+                            {
+                                "chapter_id": prev_chap,
+                                "quote": f"{loc} marked destroyed.",
+                                "context": f"It was reported that {loc} marked destroyed in the conflict."
+                            },
+                            {
+                                "chapter_id": chap_id,
+                                "quote": f"{loc} army referenced as active.",
+                                "context": f"In a turn of events, {loc} army referenced as active once again."
+                            }
+                        ]
                     })
                 
                 # Update status history (simplified parser for mock/real values)

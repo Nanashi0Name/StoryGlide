@@ -45,6 +45,36 @@ function confidenceTheme(c: number): VisualTheme {
   };
 }
 
+interface HighlightProps {
+  context: string;
+  quote: string;
+  highlightClass: string;
+}
+
+function HighlightQuote({ context, quote, highlightClass }: HighlightProps) {
+  if (!context) return null;
+  if (!quote) return <span>{context}</span>;
+
+  const idx = context.toLowerCase().indexOf(quote.toLowerCase());
+  if (idx === -1) {
+    return <span>{context}</span>;
+  }
+
+  const prefix = context.substring(0, idx);
+  const match = context.substring(idx, idx + quote.length);
+  const suffix = context.substring(idx + quote.length);
+
+  return (
+    <span>
+      {prefix}
+      <span className={`${highlightClass} px-1.5 py-0.5 rounded font-medium bg-opacity-20`}>
+        {match}
+      </span>
+      {suffix}
+    </span>
+  );
+}
+
 export default function ContradictionsList({ contradictions, selectedId, onSelect }: Props) {
   if (contradictions.length === 0) {
     return (
@@ -93,6 +123,25 @@ export default function ContradictionsList({ contradictions, selectedId, onSelec
                     </code>
                   ))}
                 </div>
+
+                {/* Evidence Context */}
+                {isSelected && flag.evidence && flag.evidence.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-obsidian-border/50 space-y-3 animate-fade-in">
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Context Citations:</div>
+                    <div className="space-y-3">
+                      {flag.evidence.map((ev, evIdx) => (
+                        <div key={evIdx} className="space-y-1.5 pl-3 border-l-2 border-neon-rose/40">
+                          <div className="text-[9px] font-mono uppercase tracking-wider text-neon-rose">
+                            Source: {ev.chapter_id.replace(/_/g, " ").toUpperCase()}
+                          </div>
+                          <p className="text-xs text-slate-300 leading-relaxed italic bg-black/40 rounded-lg p-3 border border-obsidian-border/30">
+                            &ldquo;... <HighlightQuote context={ev.context} quote={ev.quote} highlightClass="bg-neon-rose/20 text-neon-rose border-b border-neon-rose" /> ...&rdquo;
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               
               {/* Confidence indicator */}

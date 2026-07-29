@@ -13,6 +13,8 @@ from app.services.whatif_generator import (
     WhatIfResponse,
     embed_manuscript,
     run_whatif,
+    generate_proposals,
+    WhatIfProposeResponse,
 )
 
 
@@ -97,3 +99,30 @@ def test_all_scopes_return_summary(scope):
     req = WhatIfRequest(scope=scope, target_id="char_001", at_chapter="chapter_01")
     resp = run_whatif("test-id", req, _make_chapters(), _CHARACTERS)
     assert resp.summary.strip() != ""
+
+
+# ---- generate proposals tests -----------------------------------------------
+
+def test_generate_proposals_basic():
+    resp = generate_proposals("test-id", "some prompt", _make_chapters(), _CHARACTERS)
+    assert isinstance(resp, WhatIfProposeResponse)
+    assert len(resp.proposals) == 3
+    for prop in resp.proposals:
+        assert prop.id
+        assert prop.title
+        assert prop.teaser
+        assert prop.scope in ["character_death", "relationship_change", "event_removal"]
+        assert prop.target_id
+        assert prop.at_chapter
+
+
+def test_generate_proposals_death_prompt():
+    resp = generate_proposals("test-id", "What if someone dies?", _make_chapters(), _CHARACTERS)
+    assert len(resp.proposals) == 3
+    assert all(p.scope == "character_death" for p in resp.proposals)
+
+
+def test_generate_proposals_relationship_prompt():
+    resp = generate_proposals("test-id", "What if they betray each other?", _make_chapters(), _CHARACTERS)
+    assert len(resp.proposals) == 3
+    assert all(p.scope == "relationship_change" for p in resp.proposals)
