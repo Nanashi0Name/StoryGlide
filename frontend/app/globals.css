@@ -9,21 +9,21 @@
   --font-fraunces: "Fraunces", Georgia, serif;
   --font-cinzel: "Cinzel", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --bg: #060913;
-  --surface: rgba(12, 17, 29, 0.75);
-  --border: rgba(255, 255, 255, 0.07);
-  --text: #f1f5f9;
-  --text-muted: #94a3b8;
-  --accent: #0df0ff;
-  --accent-glow: rgba(13, 240, 255, 0.15);
+  --bg: #FAF7F0; /* Creamy book paper background */
+  --surface: #FFFFFF; /* Pure book page paper */
+  --border: #E4DCD0; /* Vintage binding/parchment line */
+  --text: #1F1E1C; /* Iron gall ink */
+  --text-muted: #5A544F; /* Faded ink */
+  --accent: #8B2635; /* Wax seal burgundy */
+  --accent-glow: rgba(139, 38, 53, 0.08);
 }
 
 
 body {
   background-color: var(--bg);
   color: var(--text);
-  font-family: var(--font-jakarta), system-ui, sans-serif;
-  line-height: 1.6;
+  font-family: var(--font-fraunces), Georgia, serif;
+  line-height: 1.7;
   overflow-x: hidden;
 }
 
@@ -34,68 +34,67 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #060913;
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
 }
 
-/* Atmospheric Flight Grids & HUD overlays */
+/* Elegant Deckle Edge & Margins */
 .hud-grid {
-  background-size: 50px 50px;
+  background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(to right, rgba(90, 84, 79, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(90, 84, 79, 0.02) 1px, transparent 1px);
 }
 
 .hud-grid-fine {
-  background-size: 10px 10px;
+  background-size: 8px 8px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.01) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+    linear-gradient(to right, rgba(90, 84, 79, 0.01) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(90, 84, 79, 0.01) 1px, transparent 1px);
 }
 
 .glow-orb-primary {
   filter: blur(140px);
-  background: radial-gradient(circle, rgba(13, 240, 255, 0.08) 0%, rgba(189, 94, 255, 0.03) 50%, transparent 100%);
+  background: radial-gradient(circle, rgba(179, 143, 77, 0.08) 0%, rgba(242, 236, 224, 0.4) 60%, transparent 100%);
   pointer-events: none;
 }
 
 .glow-orb-secondary {
   filter: blur(120px);
-  background: radial-gradient(circle, rgba(5, 243, 173, 0.06) 0%, rgba(13, 240, 255, 0.02) 60%, transparent 100%);
+  background: radial-gradient(circle, rgba(139, 38, 53, 0.05) 0%, rgba(242, 236, 224, 0.3) 70%, transparent 100%);
   pointer-events: none;
 }
 
-/* Glassmorphism panel style */
+/* Book Paper Panel Styles */
 .glass-panel {
-  background: rgba(12, 17, 29, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px -2px rgba(42, 35, 25, 0.06), 0 2px 8px -1px rgba(42, 35, 25, 0.03);
 }
 
 .glass-panel-interactive {
-  background: rgba(12, 17, 29, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px -2px rgba(42, 35, 25, 0.06), 0 2px 8px -1px rgba(42, 35, 25, 0.03);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-panel-interactive:hover {
-  background: rgba(20, 26, 40, 0.85);
-  border-color: rgba(13, 240, 255, 0.3);
-  box-shadow: 0 0 20px rgba(13, 240, 255, 0.1);
+  background: #FCFAF5;
+  border-color: #B38F4D; /* Antique Gold */
+  box-shadow: 0 12px 30px -4px rgba(42, 35, 25, 0.1), 0 4px 12px -2px rgba(42, 35, 25, 0.05);
   transform: translateY(-2px);
 }
 
-/* Custom terminal scanlines */
+/* Classic typewriter scanlines - turned into elegant deckle-edge shadow */
 .scanlines {
   position: relative;
   overflow: hidden;
@@ -106,19 +105,20 @@ body {
   display: block;
   position: absolute;
   top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.02) 100%);
   z-index: 10;
-  background-size: 100% 4px, 6px 100%;
   pointer-events: none;
 }
 
-/* Typing cursor animation */
+/* Typing cursor animation styled like a typewriter insertion point */
 @keyframes blink {
   0%, 100% { opacity: 1 }
   50% { opacity: 0 }
 }
 .cursor-blink::after {
-  content: "_";
-  animation: blink 1s infinite;
+  content: "│";
+  font-weight: 300;
+  animation: blink 1.1s infinite;
+  color: var(--accent);
 }
 

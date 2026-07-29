@@ -2,28 +2,16 @@
 
 Next.js 14 (App Router) frontend for StoryGlide.
 
-## Quick start
+Please refer to the main [README.md](../README.md) in the root of the project for setup instructions, prerequisites, running backend/frontend servers, running tests, and API keys.
+
+## Quick Start
 
 ```bash
 cd frontend
 npm install
-cp .env.local.example .env.local   # set API URL if needed
+cp .env.local.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000
+The application will be available locally at http://localhost:3000.
 
-## Environment variables
-
-| Variable | Description | Default |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | FastAPI backend base URL | `http://localhost:8000` |
-
-## Scripts
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start dev server with hot-reload |
-| `npm run build` | Production build |
-| `npm run lint` | ESLint |
-| `npm run type-check` | TypeScript type check |

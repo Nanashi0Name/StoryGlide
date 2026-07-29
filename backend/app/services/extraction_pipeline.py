@@ -2,7 +2,7 @@
 Extraction pipeline.
 
 Orchestrates: chapter chunking locally → single-pass structured Gemini call → persist to SQLite.
-Bypasses intermediate NLU/Granite steps and Chroma indexing.
+Bypasses manual intermediate extraction steps.
 
 Called as a FastAPI BackgroundTask so the HTTP response returns immediately.
 """

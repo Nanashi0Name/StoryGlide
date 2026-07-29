@@ -43,7 +43,7 @@ def _validate_file(file: UploadFile) -> None:
 async def upload_manuscript(
     file: UploadFile,
     background_tasks: BackgroundTasks,
-    provider: str = "watsonx",
+    provider: str = "gemini",
     db: AsyncSession = Depends(get_db),
 ):
     """Upload a manuscript. Returns a manuscript_id immediately; processing runs in the background."""

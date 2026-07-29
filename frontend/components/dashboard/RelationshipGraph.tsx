@@ -14,9 +14,9 @@ interface Props {
 }
 
 const SENTIMENT_COLOR: Record<string, string> = {
-  hostile: "#ff4b72", // neon-rose
-  friendly: "#05f3ad", // neon-green
-  neutral: "#94a3b8", // slate-400
+  hostile: "#8B2635", // crimson
+  friendly: "#4B6B58", // sage
+  neutral: "#8E8880", // ink-faded
 };
 
 function buildElements(characters: CharacterObject[]) {
@@ -53,13 +53,13 @@ const STYLESHEET: any[] = [
   {
     selector: "node",
     style: {
-      "background-color": "#0d1527",
+      "background-color": "#FFFFFF",
       "border-width": 2,
-      "border-color": "#0df0ff",
+      "border-color": "#B38F4D",
       "label": "data(label)",
-      "color": "#f1f5f9",
+      "color": "#1F1E1C",
       "font-size": "11px",
-      "font-family": "var(--font-jakarta), system-ui, sans-serif",
+      "font-family": "var(--font-fraunces), Georgia, serif",
       "text-valign": "center",
       "text-halign": "center",
       "width": 75,
@@ -73,10 +73,10 @@ const STYLESHEET: any[] = [
   {
     selector: "node:selected",
     style: {
-      "background-color": "#0df0ff",
-      "border-width": 3,
-      "border-color": "#ffffff",
-      "color": "#060913",
+      "background-color": "#B38F4D",
+      "border-width": 2,
+      "border-color": "#1F1E1C",
+      "color": "#FFFFFF",
       "font-weight": "bold",
     } as cytoscape.Css.Node,
   },
@@ -84,32 +84,32 @@ const STYLESHEET: any[] = [
     selector: "edge",
     style: {
       "width": 2,
-      "line-color": "#475569",
-      "target-arrow-color": "#475569",
+      "line-color": "#B8B2A9",
+      "target-arrow-color": "#B8B2A9",
       "target-arrow-shape": "triangle",
       "curve-style": "bezier",
       "label": "data(label)",
       "font-size": "8px",
-      "font-family": "var(--font-mono), monospace",
-      "color": "#94a3b8",
+      "font-family": "var(--font-jakarta), system-ui, sans-serif",
+      "color": "#5A544F",
       "text-rotation": "autorotate",
-      "text-background-color": "#060913",
-      "text-background-opacity": 0.9,
+      "text-background-color": "#FAF7F0",
+      "text-background-opacity": 0.95,
       "text-background-padding": "3px",
     } as cytoscape.Css.Edge,
   },
   {
     selector: 'edge[sentiment = "hostile"]',
     style: {
-      "line-color": "#ff4b72",
-      "target-arrow-color": "#ff4b72",
+      "line-color": "#8B2635",
+      "target-arrow-color": "#8B2635",
     } as cytoscape.Css.Edge,
   },
   {
     selector: 'edge[sentiment = "friendly"]',
     style: {
-      "line-color": "#05f3ad",
-      "target-arrow-color": "#05f3ad",
+      "line-color": "#4B6B58",
+      "target-arrow-color": "#4B6B58",
     } as cytoscape.Css.Edge,
   },
 ];
@@ -117,8 +117,8 @@ const STYLESHEET: any[] = [
 export default function RelationshipGraph({ characters }: Props) {
   if (characters.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 rounded-xl border border-obsidian-border bg-obsidian-card text-sm text-slate-400 font-mono">
-        No characters extracted yet.
+      <div className="flex items-center justify-center h-48 rounded-xl border border-paper-border bg-paper-card text-sm text-ink-muted font-sans font-bold uppercase tracking-wider">
+        No characters bound yet.
       </div>
     );
   }
@@ -126,18 +126,18 @@ export default function RelationshipGraph({ characters }: Props) {
   const elements = buildElements(characters);
 
   return (
-    <div className="rounded-2xl border border-obsidian-border overflow-hidden bg-[#060913] relative shadow-lg" style={{ height: 480 }}>
-      {/* HUD scanner visual lines */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none z-10"></div>
-      <div className="absolute top-2 left-3 font-mono text-[9px] text-slate-500 uppercase tracking-widest z-10">
-        [SYS_RENDER: CHARACTER_ENTITIES_RELATIONS]
+    <div className="rounded-2xl border border-paper-border overflow-hidden bg-[#FAF7F0] relative shadow-book" style={{ height: 480 }}>
+      {/* Subtle grid pattern overlay */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none z-10"></div>
+      <div className="absolute top-3 left-4 font-sans text-[9px] font-bold text-ink-muted uppercase tracking-wider z-10">
+        Dramatis Personae Social Map
       </div>
 
       <CytoscapeComponent
         elements={elements}
         stylesheet={STYLESHEET}
         layout={{ name: "cose", animate: true, padding: 50, nodeOverlap: 20 } as any}
-        style={{ width: "100%", height: "100%", background: "#060913" }}
+        style={{ width: "100%", height: "100%", background: "#FAF7F0" }}
         cy={(cy) => {
           if ((cy as any)._storyglide_initialized) return;
           (cy as any)._storyglide_initialized = true;
@@ -197,21 +197,21 @@ export default function RelationshipGraph({ characters }: Props) {
         }}
       />
       
-      <div className="absolute bottom-0 left-0 right-0 flex gap-4 px-4 py-3 bg-[#0a0f1d]/90 backdrop-blur-sm border-t border-obsidian-border text-[10px] font-mono uppercase tracking-wider text-slate-400 z-10">
+      <div className="absolute bottom-0 left-0 right-0 flex gap-4 px-4 py-3.5 bg-paper-darker/95 backdrop-blur-sm border-t border-paper-border text-[10px] font-sans font-bold uppercase tracking-wider text-ink-muted z-10">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#ff4b72" }} />
+          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#8B2635" }} />
           HOSTILE
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#05f3ad" }} />
+          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#4B6B58" }} />
           FRIENDLY
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#475569" }} />
+          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#B8B2A9" }} />
           NEUTRAL
         </span>
-        <span className="ml-auto text-[9px] text-slate-500">
-          * DRAG NODES TO ORGANIZE NETWORKS
+        <span className="ml-auto text-[9px] text-ink-faded lowercase">
+          * Drag characters to reorganize the social map
         </span>
       </div>
     </div>

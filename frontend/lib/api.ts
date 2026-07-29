@@ -118,7 +118,7 @@ export interface WhatIfProposeResponse {
   proposals: WhatIfProposal[];
 }
 
-export async function uploadManuscript(file: File, provider: string = "watsonx"): Promise<UploadResponse> {
+export async function uploadManuscript(file: File, provider: string = "gemini"): Promise<UploadResponse> {
   const form = new FormData();
   form.append("file", file);
 

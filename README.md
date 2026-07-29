@@ -18,12 +18,12 @@ StoryGlide does not write prose. It diagnoses structural issues and lets the aut
 | Feature | What it does |
 |---|---|
 | **Manuscript upload & chunking** | Accepts `.txt` and `.docx`. Splits into chapters by heading detection (regex on "Chapter N"), with a 1500-word fallback for un-headed scenes. |
-| **Extraction & embedding** | Watson NLU extracts entities, relations, and sentiment per chunk. IBM Granite fills in implicit relationships and world-state facts. Each chunk is embedded with a Granite embedding model and indexed in Chroma for retrieval. |
+| **Extraction & Analysis** | Google Gemini extracts characters, relationships, sentiment, world-state facts, and plot threads per chapter in a single pass. |
 | **World-state tracker** | One record per chapter capturing the story world at that point: character statuses, locations, faction control, objects, and events. |
 | **Contradiction diff engine** | Walks the ordered world-state records and flags logical conflicts (e.g. a character who died in chapter 4 appearing alive in chapter 15). Uses structured state diffs — not raw LLM comparison — to catch long-range inconsistencies. |
 | **Unresolved thread tracker** | Identifies "planted" narrative elements (Chekhov's guns, promises, foreshadowing, unanswered questions) and flags any that are unresolved by the final chapter. |
 | **Emotional arc scorer** | Scores each chapter 0–1 for tension and tags a dominant emotion. Plotted as an arc chart with a reference curve overlay. |
-| **What-if exploration generator** | Author selects a scope (character death, relationship change, event removal) and a target chapter. Granite generates a short alternate-path sketch and a list of downstream chapters that would need rewriting. |
+| **What-if exploration generator** | Author selects a scope (character death, relationship change, event removal) and a target chapter. Gemini generates a short alternate-path sketch and a list of downstream chapters that would need rewriting. |
 | **Creator dashboard** | Single-page view with 5 tabs: Overview (relationship graph, stat cards), Emotional Arc (line chart + pacing heatmap), Contradictions, Threads, What-If panel. |
 
 ---
@@ -39,61 +39,31 @@ Manuscript upload (.txt / .docx)
   Chapter chunking  ──── regex heading detection, 1500-word fallback
         │
         ▼
-  Extraction & embedding
-    ├─ Watson NLU  ──── entities, relations, sentiment per chunk
-    ├─ IBM Granite ──── world-state JSON, implicit relationships, threads
-    └─ Granite embeddings → Chroma vector store
+  Extraction & formatting
+        └─ Google Gemini ──── single-pass JSON extraction (characters, contradictions, threads, world states)
         │
         ▼
   World-state tracker  ──── per-chapter JSON records in SQLite
         │
         ▼
   Analysis engine
-    ├─ Contradiction diff  ──── state-diff logic (structured, not LLM)
-    ├─ Thread tracker      ──── cross-reference planted vs resolved elements
-    ├─ Arc scorer          ──── tension score + dominant emotion per chapter
-    └─ What-if generator   ──── RAG retrieval → Granite generation
+        ├─ Contradiction diff  ──── state-diff logic (structured, not LLM)
+        ├─ Thread tracker      ──── cross-reference planted vs resolved elements
+        ├─ Arc scorer          ──── tension score + dominant emotion per chapter
+        └─ What-if generator   ──── full context / RAG query → Gemini generation
         │
         ▼
   Creator dashboard  ──── Next.js 14, Cytoscape.js, Visx
 ```
 
-### IBM Services Used
+### AI Models Used
 
-| Service | Model / API | Where in code |
+| Service / Provider | Model / API | Where in code |
 |---|---|---|
-| **watsonx.ai** | `ibm/granite-3-8b-instruct` | `granite_extractor.py`, `arc_scorer.py`, `whatif_generator.py` |
-| **watsonx.ai embeddings** | `ibm/slate-125m-english-rtrvr` | `whatif_generator.py` (Chroma ingestion + query) |
-| **Watson Natural Language Understanding** | Entities, relations, sentiment | `nlu_extractor.py` |
-| **Chroma** (local vector store) | — | `whatif_generator.py` |
-
-### Key design decision
-
-Contradiction detection operates on **structured state diffs**, not on asking an LLM to compare raw passages. This allows catching long-range inconsistencies (e.g. a location destroyed in chapter 4 being referenced as active in chapter 15) that naive semantic comparison misses.
-
----
-
-## Selected Challenge Theme
-
-**Create with AI: The Future of Creative Industries** — *"Build solutions that help creators work smarter, explore new forms of expression, and unlock new creative possibilities."*
-
-| Theme phrase | Feature |
-|---|---|
-| Work smarter | Contradiction diff engine and thread tracker automate work that currently takes hours of manual re-reading. |
-| Explore new forms of expression | What-if exploration generator — lets the author generate and compare alternate character/plot paths without rewriting the manuscript. |
-| Unlock new creative possibilities | The same world-state model that finds problems also powers safe experimentation with solutions. |
-
----
-
-## How IBM Bob Was Used
-
-IBM Bob was used as the primary development tool across the entire SDLC — scaffolding, code generation, refactors, and test generation. Every Bob-assisted step is logged in [`docs/bob-usage.md`](docs/bob-usage.md).
-
-Summary of Bob's contributions:
-- **Week 1:** Scaffolded the full FastAPI backend and Next.js frontend from scratch; implemented the upload, chunking, and extraction pipeline.
-- **Week 2:** Built the world-state tracker, contradiction diff engine, and unresolved-thread tracker.
-- **Week 3:** Built the what-if generator, emotional arc scorer, and the full creator dashboard (6 components).
-- **Week 4:** Added the `/dashboard` aggregate endpoint, frontend empty states and retry UX, demo seed, and this README.
+| **Google Gemini (Default)** | `gemini-3.5-flash` | `extraction_pipeline.py`, `whatif_generator.py` |
+| **Google Gemini Embeddings** | `text-embedding-004` | `whatif_generator.py` (Chroma querying) |
+| **watsonx.ai (Optional)** | `ibm/granite-4-h-small` | `llm_client.py` (fallback text generation) |
+| **watsonx.ai Embeddings (Optional)** | `ibm/slate-125m-english-rtrvr-v2` | `llm_client.py` (fallback embeddings) |
 
 ---
 
@@ -103,7 +73,6 @@ Summary of Bob's contributions:
 
 - Python 3.11+
 - Node.js 18+
-- IBM Cloud account (for live AI calls — see API Key Setup below)
 - `pip install -r backend/requirements.txt`
 - `npm install` (inside `frontend/`)
 
@@ -114,13 +83,13 @@ cd backend
 
 # Copy and fill in the environment file
 cp .env.example .env
-# Edit .env — see "API Key Setup" section below
+# Edit .env to add your GEMINI_API_KEY (see "API Key Setup" below)
 
 # Run the API server
 uvicorn app.main:app --reload --port 8000
 ```
 
-On first startup the server automatically seeds the demo manuscript in the background (see [Demo](#demo)).
+On first startup, the server automatically seeds the demo manuscript in the background.
 
 ### 2. Frontend setup
 
@@ -149,51 +118,44 @@ Restart the frontend dev server — a "View demo analysis →" button will appea
 
 ## API Key Setup
 
-### IBM watsonx.ai
+### Google Gemini (Default)
 
-1. Sign in to [cloud.ibm.com](https://cloud.ibm.com) (or create a free account).
-2. **Create a project:** click "Projects" → "New project" → give it a name.
-3. **Get the Project ID:** open the project → "Manage" tab → copy the Project ID.
-4. **Get an API key:** click your profile icon (top right) → "Manage access and users" → "API keys" → "Create" → copy the key immediately (it is only shown once).
-5. **URL:** `https://us-south.ml.cloud.ibm.com` for the Dallas region (default). Check the watsonx.ai docs if your project is in a different region.
+1. Get an API key from Google AI Studio.
+2. In `backend/.env`, set `GEMINI_API_KEY`:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL_ID=gemini-3.5-flash
+GEMINI_EMBEDDING_MODEL_ID=text-embedding-004
+```
+
+### IBM watsonx.ai (Optional Fallback)
+
+If you wish to use the alternative watsonx.ai models:
+1. Sign in to [cloud.ibm.com](https://cloud.ibm.com) and create a project.
+2. Get the Project ID and API Key, and set them in `backend/.env`:
 
 ```env
 WATSONX_API_KEY=your_key_here
 WATSONX_PROJECT_ID=your_project_id_here
 WATSONX_URL=https://us-south.ml.cloud.ibm.com
+WATSONX_MODEL_ID=ibm/granite-4-h-small
 ```
 
-### Watson Natural Language Understanding
+### Local development without API credentials
 
-1. In [IBM Cloud Catalog](https://cloud.ibm.com/catalog), search "Natural Language Understanding" → select the **Lite (free)** plan → "Create".
-2. Open the NLU instance → "Manage" → copy the **API key** and **URL**.
-
-```env
-WATSON_NLU_API_KEY=your_nlu_key_here
-WATSON_NLU_URL=https://api.us-south.natural-language-understanding.watson.cloud.ibm.com
-```
-
-### Local development without IBM credentials
-
-Set `MOCK_AI=true` in `backend/.env` to run the full pipeline with stub AI responses — no API keys needed. Use `MOCK_AI=false` only for the real demo.
+Set `MOCK_AI=true` in `backend/.env` to run the full pipeline with stub AI responses — no API keys needed.
 
 ---
 
 ## Demo
 
-### Pre-loaded novel
+### Pre-loaded manuscript
 
-The backend automatically seeds an analysis of [*The Time Machine*](https://www.gutenberg.org/files/35/35-0.txt) (H.G. Wells, public domain) on first startup.
+The backend automatically seeds an analysis of [*The Adventure of the Speckled Band*](https://www.gutenberg.org/ebooks/1661) (Arthur Conan Doyle, public domain) on first startup.
 
-**Manual step:** Download the file and save it before starting the backend:
+The story file is pre-packaged in the repository at `data/The_Adventure_of_the_Speckled_Band.txt`, so no manual download is required.
 
-```
-https://www.gutenberg.org/files/35/35-0.txt  →  data/the_time_machine.txt
-```
-
-### Demo video
-
-> 📹 **[Watch the demo](#)** *(link to be added before submission)*
 
 ---
 
@@ -203,20 +165,9 @@ https://www.gutenberg.org/files/35/35-0.txt  →  data/the_time_machine.txt
 |---|---|---|
 | Frontend | Next.js 14 / React 18 / TypeScript | App Router, Tailwind CSS |
 | Backend | Python / FastAPI | Async, BackgroundTasks |
-| AI — generation | IBM watsonx.ai (Granite) | Extraction, arc scoring, what-if |
-| AI — embeddings | IBM watsonx.ai (Slate) | RAG for what-if retrieval |
-| AI — NLP | Watson Natural Language Understanding | Entities, relations, sentiment |
-| Vector store | Chroma (local) | Chunk embeddings |
+| AI — generation | Google Gemini (Gemini 3.5 Flash) | Extraction, pacing/arc scoring, what-if generation |
+| AI — embeddings | Google Gemini (text-embedding-004) | Semantic matching for what-if exploration |
 | State store | SQLite + SQLAlchemy async | World-state facts, contradiction flags |
 | Visualization | Visx + Cytoscape.js | Charts and relationship graph |
-| Testing | pytest + MOCK_AI flag | 47 backend tests, zero live API calls |
+| Testing | pytest + MOCK_AI flag | 33 backend tests, zero live API calls |
 
----
-
-## Submission Checklist
-
-See [`docs/submission-checklist.md`](docs/submission-checklist.md).
-
----
-
-<p align="center"><sub>Built with <a href="https://www.ibm.com/products/bob">IBM Bob</a> for the AI Builders Challenge</sub></p>

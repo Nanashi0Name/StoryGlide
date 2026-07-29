@@ -14,7 +14,7 @@ class Manuscript(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     filename: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, default="processing")
-    api_provider: Mapped[str] = mapped_column(String, default="watsonx")
+    api_provider: Mapped[str] = mapped_column(String, default="gemini")
     characters_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     contradictions_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     threads_json: Mapped[str | None] = mapped_column(Text, nullable=True)

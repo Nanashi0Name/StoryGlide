@@ -28,7 +28,7 @@ export default function UploadForm() {
 
     setStage("uploading");
     setErrorMsg("");
-    setStatusLabel("UPLOADING_DRAFT...");
+    setStatusLabel("Uploading draft...");
 
     try {
       const { manuscript_id } = await uploadManuscript(file, provider);
@@ -39,7 +39,7 @@ export default function UploadForm() {
       while (polls < MAX_POLLS) {
         await sleep(POLL_INTERVAL_MS);
         const status = await pollStatus(manuscript_id);
-        setStatusLabel(`RUNNING_DIAGNOSTICS (${status.status.toUpperCase()})`);
+        setStatusLabel("Leafing through draft pages...");
 
         if (status.status === "done") {
           router.push(`/dashboard/${manuscript_id}`);
@@ -61,11 +61,11 @@ export default function UploadForm() {
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Provider selection */}
-        <div className="rounded-xl border border-obsidian-border bg-[#0a0f1d] p-6 shadow-inner relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-neon-purple/40 to-transparent animate-pulse"></div>
+        <div className="rounded-xl border border-paper-border bg-paper-darker p-6 shadow-inner relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-gold/30 to-transparent"></div>
           
-          <label className="block text-xs font-mono font-semibold text-slate-400 uppercase tracking-widest mb-3">
-            SELECT_AI_COMPUTE_ENGINE
+          <label className="block text-[10px] font-sans font-bold text-ink-muted uppercase tracking-wider mb-3">
+            CHOOSE LITERARY GUIDE
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
@@ -74,15 +74,15 @@ export default function UploadForm() {
               onClick={() => setProvider("gemini")}
               className={`rounded-xl border p-4 text-left transition-all duration-300 relative overflow-hidden group ${
                 provider === "gemini"
-                  ? "bg-[#121827] border-neon-cyan/50 text-white shadow-glow-cyan/5"
-                  : "border-obsidian-border text-slate-500 hover:text-slate-300 hover:bg-slate-800/10"
+                  ? "bg-paper-card border-crimson text-ink shadow-book"
+                  : "border-paper-border text-ink-muted hover:text-ink hover:bg-paper-darker/50"
               }`}
             >
-              <div className="font-mono text-[9px] text-slate-500 tracking-wider">ENGINE_PRIMARY</div>
-              <div className="font-sans text-sm font-bold mt-1">Google Gemini API</div>
-              <div className="text-[10px] font-mono text-slate-500 mt-1">gemini-3.5-flash</div>
+              <div className="font-sans text-[9px] font-bold text-ink-faded uppercase tracking-wider">PRIMARY INTEL</div>
+              <div className="font-display text-sm font-bold mt-1 text-ink">Google Gemini API</div>
+              <div className="text-[10px] font-sans text-ink-muted mt-1">gemini-3.5-flash</div>
               {provider === "gemini" && (
-                <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-neon-cyan animate-pulse"></div>
+                <div className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-crimson"></div>
               )}
             </button>
             <button
@@ -91,26 +91,26 @@ export default function UploadForm() {
               onClick={() => setProvider("watsonx")}
               className={`rounded-xl border p-4 text-left transition-all duration-300 relative overflow-hidden group ${
                 provider === "watsonx"
-                  ? "bg-[#121827] border-neon-purple/50 text-white shadow-glow-purple/5"
-                  : "border-obsidian-border text-slate-500 hover:text-slate-300 hover:bg-slate-800/10"
+                  ? "bg-paper-card border-crimson text-ink shadow-book"
+                  : "border-paper-border text-ink-muted hover:text-ink hover:bg-paper-darker/50"
               }`}
             >
-              <div className="font-mono text-[9px] text-slate-500 tracking-wider">ENGINE_SECONDARY</div>
-              <div className="font-sans text-sm font-bold mt-1">IBM watsonx.ai</div>
-              <div className="text-[10px] font-mono text-slate-500 mt-1">granite-4-h-small</div>
+              <div className="font-sans text-[9px] font-bold text-ink-faded uppercase tracking-wider">SECONDARY INTEL</div>
+              <div className="font-display text-sm font-bold mt-1 text-ink">IBM watsonx.ai</div>
+              <div className="text-[10px] font-sans text-ink-muted mt-1">granite-4-h-small</div>
               {provider === "watsonx" && (
-                <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-neon-purple animate-pulse"></div>
+                <div className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-crimson"></div>
               )}
             </button>
           </div>
         </div>
 
         {/* File Ingestion */}
-        <div className="rounded-xl border border-obsidian-border bg-[#0a0f1d] p-6 shadow-inner relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-neon-cyan/40 to-transparent animate-pulse"></div>
+        <div className="rounded-xl border border-paper-border bg-paper-darker p-6 shadow-inner relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-gold/30 to-transparent"></div>
           
-          <label className="block text-xs font-mono font-semibold text-slate-400 uppercase tracking-widest mb-3">
-            SELECT_MANUSCRIPT_FILE
+          <label className="block text-[10px] font-sans font-bold text-ink-muted uppercase tracking-wider mb-3">
+            SELECT MANUSCRIPT DRAFT
           </label>
           
           <input
@@ -118,23 +118,23 @@ export default function UploadForm() {
             type="file"
             accept=".txt,.docx"
             onChange={(e) => setFileSelected(!!e.target.files?.length)}
-            className="block w-full text-sm text-slate-400 font-sans
-              file:mr-4 file:rounded-lg file:border file:border-neon-cyan/30 file:bg-neon-cyan/5 
-              file:px-4 file:py-2 file:text-xs file:font-mono file:font-bold file:text-neon-cyan 
-              file:uppercase file:tracking-wider hover:file:bg-neon-cyan/20 file:transition-all 
+            className="block w-full text-sm text-ink-muted font-sans
+              file:mr-4 file:rounded-lg file:border file:border-crimson/25 file:bg-crimson/5 
+              file:px-4 file:py-2 file:text-xs file:font-sans file:font-bold file:text-crimson 
+              file:uppercase file:tracking-wider hover:file:bg-crimson/15 file:transition-all 
               cursor-pointer focus:outline-none"
             disabled={stage === "uploading" || stage === "processing"}
           />
           
-          <p className="mt-3 text-[11px] text-slate-500 font-mono">
-            FILE_EXTENSIONS: .txt, .docx (Max 15MB)
+          <p className="mt-3 text-[10px] text-ink-faded font-sans font-medium">
+            File Extensions: .txt, .docx (Up to 15MB)
           </p>
         </div>
 
         <button
           type="submit"
           disabled={stage === "uploading" || stage === "processing" || !fileSelected}
-          className="w-full flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-neon-cyan to-[#00cce0] px-6 py-3.5 text-sm font-bold text-[#060913] uppercase tracking-wider font-mono shadow-glow-cyan/20 hover:shadow-glow-cyan disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300"
+          className="w-full flex items-center justify-center gap-3 rounded-xl bg-crimson hover:bg-crimson-hover px-6 py-3.5 text-sm font-bold text-white uppercase tracking-wider font-sans shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300"
         >
           {stage === "uploading" || stage === "processing" ? (
             <span className="flex items-center gap-2.5">
@@ -142,24 +142,24 @@ export default function UploadForm() {
               <span className="animate-pulse">{statusLabel}</span>
             </span>
           ) : (
-            <span>RUN TELEMETRY ANALYSIS</span>
+            <span>ANALYZE MANUSCRIPT</span>
           )}
         </button>
       </form>
 
       {/* Error Panel */}
       {stage === "error" && (
-        <div className="rounded-xl border border-neon-rose/30 bg-neon-rose/5 p-4 text-xs font-mono text-neon-rose shadow-glow-rose/10 flex items-start justify-between gap-4 animate-scale-in overflow-hidden">
+        <div className="rounded-xl border border-crimson/30 bg-crimson/5 p-4 text-xs font-sans text-crimson shadow-sm flex items-start justify-between gap-4 animate-scale-in overflow-hidden">
           <div className="space-y-1 min-w-0 flex-1">
-            <div className="font-bold uppercase tracking-wider">[ANALYSIS_FAIL]</div>
-            <p className="text-slate-300 leading-normal break-all whitespace-pre-wrap max-h-48 overflow-y-auto pr-2">
+            <div className="font-bold uppercase tracking-wider">ANALYSIS INTERRUPTED</div>
+            <p className="text-ink-muted leading-normal break-all whitespace-pre-wrap max-h-48 overflow-y-auto pr-2">
               {errorMsg}
             </p>
           </div>
           <button
             type="button"
             onClick={() => { setStage("idle"); setErrorMsg(""); }}
-            className="shrink-0 rounded bg-neon-rose/10 border border-neon-rose/30 px-3 py-1.5 font-bold uppercase tracking-wider text-neon-rose hover:bg-neon-rose/20 transition-colors"
+            className="shrink-0 rounded bg-crimson/10 border border-crimson/30 px-3 py-1.5 font-bold uppercase tracking-wider text-crimson hover:bg-crimson/20 transition-colors"
           >
             DISMISS
           </button>

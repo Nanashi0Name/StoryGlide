@@ -2,37 +2,23 @@
 
 Python FastAPI backend for the StoryGlide manuscript analysis engine.
 
-## Quick start
+Please refer to the main [README.md](../README.md) in the root of the project for setup instructions, prerequisites, running backend/frontend servers, running tests, and API keys.
+
+## Quick Start
 
 ```bash
 cd backend
 python -m venv .venv
+
 # Windows
 .venv\Scripts\activate
 # macOS / Linux
 source .venv/bin/activate
 
 pip install -r requirements.txt
-cp .env.example .env   # fill in your IBM credentials
-uvicorn app.main:app --reload
+cp .env.example .env   # Fill in your GEMINI_API_KEY
+uvicorn app.main:app --reload --port 8000
 ```
 
-API docs available at http://localhost:8000/docs
+API documentation is available locally at http://localhost:8000/docs when the server is running.
 
-## Environment variables
-
-| Variable | Description |
-|---|---|
-| `WATSONX_API_KEY` | IBM watsonx.ai API key |
-| `WATSONX_PROJECT_ID` | watsonx.ai project ID |
-| `WATSONX_URL` | watsonx.ai endpoint (default: us-south) |
-| `WATSON_NLU_API_KEY` | Watson NLU API key |
-| `WATSON_NLU_URL` | Watson NLU endpoint |
-| `DATABASE_URL` | SQLAlchemy async DB URL (default: SQLite) |
-| `MOCK_AI` | Set `true` to use stubs instead of live IBM APIs |
-
-## Running tests
-
-```bash
-MOCK_AI=true pytest
-```

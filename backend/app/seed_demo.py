@@ -1,10 +1,10 @@
 """
-Demo seed — loads The Time Machine (H.G. Wells) on first startup.
+Demo seed — loads The Adventure of the Speckled Band (Arthur Conan Doyle) on first startup.
 
-The text file is expected at:  <project_root>/data/the_time_machine.txt
+The text file is expected at:  <project_root>/data/The_Adventure_of_the_Speckled_Band.txt
 
 If the file is absent the seed silently skips (safe for CI and fresh clones).
-If a manuscript with filename="demo_the_time_machine.txt" already exists in the
+If a manuscript with filename="demo_the_speckled_band.txt" already exists in the
 DB the seed also skips (idempotent).
 
 After the seed runs successfully the manuscript_id is written to
