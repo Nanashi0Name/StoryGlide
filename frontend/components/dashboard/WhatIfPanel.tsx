@@ -3,7 +3,6 @@
 import {
   ChapterObject,
   CharacterObject,
-  DownstreamImpact,
   WhatIfRequest,
   WhatIfResponse,
   WhatIfProposal,
@@ -27,10 +26,10 @@ const SCOPE_OPTIONS = [
 
 function Spinner() {
   return (
-    <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-    </svg>
+    <div className="relative h-4 w-4">
+      <span className="absolute inset-0 rounded-full border border-gold/15"></span>
+      <span className="absolute inset-0 rounded-full border border-t-gold border-r-transparent border-b-transparent border-l-transparent animate-spin"></span>
+    </div>
   );
 }
 
@@ -145,13 +144,13 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
   return (
     <div className="space-y-6">
       {/* Mode Toggle */}
-      <div className="flex border-b border-paper-border pb-4 gap-2">
+      <div className="flex border-b border-paper-border pb-4 gap-4">
         <button
           onClick={() => {
             setActiveMode("preset");
             setError("");
           }}
-          className={`pb-2 pr-6 text-xs font-sans font-bold tracking-wider transition-all duration-300 border-b-2 ${
+          className={`pb-3 pr-6 text-xs font-mono font-bold tracking-widest transition-all duration-300 border-b-2 uppercase ${
             activeMode === "preset"
               ? "border-gold text-gold"
               : "border-transparent text-ink-muted hover:text-ink"
@@ -164,7 +163,7 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
             setActiveMode("conversational");
             setError("");
           }}
-          className={`pb-2 px-6 text-xs font-sans font-bold tracking-wider transition-all duration-300 border-b-2 ${
+          className={`pb-3 px-6 text-xs font-mono font-bold tracking-widest transition-all duration-300 border-b-2 uppercase ${
             activeMode === "conversational"
               ? "border-gold text-gold"
               : "border-transparent text-ink-muted hover:text-ink"
@@ -176,24 +175,26 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl border border-crimson/30 bg-crimson/5 p-4 text-xs font-sans text-crimson shadow-sm">
-          <span className="font-bold uppercase tracking-wider block mb-1">Weaving Interrupted</span>
+        <div className="rounded-xl border border-crimson/30 bg-crimson/5 p-5 text-xs font-sans text-crimson shadow-sm relative">
+          <div className="absolute top-0 left-0 h-full w-[2px] bg-crimson"></div>
+          <span className="font-bold uppercase tracking-widest block mb-1 text-[9px] text-crimson">Weaving Interrupted</span>
           {error}
         </div>
       )}
 
       {/* PRESET MODE */}
       {activeMode === "preset" && (
-        <div className="space-y-6">
-          <form onSubmit={handleSubmit} className="rounded-2xl border border-paper-border bg-paper-card p-6 md:p-8 space-y-6 glass-panel shadow-book">
-            <h3 className="font-display text-lg font-bold text-ink tracking-wide">
+        <div className="space-y-8">
+          <form onSubmit={handleSubmit} className="rounded-2xl border border-paper-border bg-paper-card p-6 md:p-8 space-y-6 glass-panel shadow-book relative">
+            <div className="absolute top-3 right-3 font-mono text-[8px] text-ink-faded uppercase tracking-widest">NARRATIVE DRAFT ENGINE</div>
+            <h3 className="font-display text-xl font-bold text-ink tracking-wide">
               Design Story Trajectory
             </h3>
 
             {/* Scope */}
             <div className="space-y-2">
-              <label className="block text-[10px] font-sans font-bold text-ink-muted uppercase tracking-wider">
-                Narrative Scope
+              <label className="block text-[9px] font-mono font-bold text-ink-muted uppercase tracking-widest">
+                Narrative Scope Selector
               </label>
               <div className="flex flex-wrap gap-2.5">
                 {SCOPE_OPTIONS.map((opt) => {
@@ -203,9 +204,9 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
                       key={opt.value}
                       type="button"
                       onClick={() => { setScope(opt.value); setTargetId(""); setCustomTarget(""); }}
-                      className={`rounded-lg border px-4 py-2.5 text-xs font-sans font-bold uppercase tracking-wider transition-all duration-300 ${
+                      className={`rounded-lg border px-4 py-2.5 text-xs font-mono font-bold uppercase tracking-widest transition-all duration-300 ${
                         isActive
-                          ? "border-gold/50 bg-gold/5 text-gold shadow-sm"
+                          ? "border-gold/50 bg-gold/5 text-gold shadow-book"
                           : "border-paper-border bg-transparent text-ink-muted hover:text-ink hover:border-gold/30"
                       }`}
                     >
@@ -219,14 +220,14 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Target */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-sans font-bold text-ink-muted uppercase tracking-wider">
-                  {isCharacterScope ? "Target Character" : "Target Event"}
+                <label className="block text-[9px] font-mono font-bold text-ink-muted uppercase tracking-widest">
+                  {isCharacterScope ? "Target Character Dossier" : "Target Event Key"}
                 </label>
                 {isCharacterScope ? (
                   <select
                     value={targetId}
                     onChange={(e) => setTargetId(e.target.value)}
-                    className="w-full rounded-xl border border-paper-border bg-paper-card px-4 py-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold shadow-sm"
+                    className="w-full rounded-xl border border-paper-border bg-paper-darker px-4 py-3.5 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-gold/30 focus:border-gold shadow-inner font-sans cursor-pointer"
                   >
                     <option value="" className="bg-paper-card text-ink-muted">Select target character...</option>
                     {characters.map((c) => (
@@ -241,20 +242,20 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
                     value={customTarget}
                     onChange={(e) => setCustomTarget(e.target.value)}
                     placeholder="e.g. time_machine_destroyed"
-                    className="w-full rounded-xl border border-paper-border bg-paper-card px-4 py-3 text-sm text-ink placeholder-ink-faded focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold font-sans shadow-sm"
+                    className="w-full rounded-xl border border-paper-border bg-paper-darker px-4 py-3.5 text-sm text-ink placeholder-ink-light focus:outline-none focus:ring-1 focus:ring-gold/30 focus:border-gold font-mono shadow-inner"
                   />
                 )}
               </div>
 
               {/* Chapter */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-sans font-bold text-ink-muted uppercase tracking-wider">
-                  Chapter Threshold
+                <label className="block text-[9px] font-mono font-bold text-ink-muted uppercase tracking-widest">
+                  Chapter Threshold (Timeline Boundary)
                 </label>
                 <select
                   value={atChapter}
                   onChange={(e) => setAtChapter(e.target.value)}
-                  className="w-full rounded-xl border border-paper-border bg-paper-card px-4 py-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold shadow-sm"
+                  className="w-full rounded-xl border border-paper-border bg-paper-darker px-4 py-3.5 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-gold/30 focus:border-gold shadow-inner font-sans cursor-pointer"
                 >
                   <option value="" className="bg-paper-card text-ink-muted">Select chapter threshold...</option>
                   {uniqueChapters.map((ch) => (
@@ -269,47 +270,51 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
             <button
               type="submit"
               disabled={!canSubmit}
-              className="flex items-center gap-2.5 rounded-xl bg-crimson hover:bg-crimson-hover px-6 py-3.5 text-xs font-sans font-bold uppercase tracking-wider text-white shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300"
+              className="flex items-center gap-2.5 rounded-xl bg-crimson hover:bg-crimson-hover px-6 py-4 text-xs font-sans font-bold uppercase tracking-widest text-white shadow-book hover:shadow-book-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-500"
             >
               {loading && <Spinner />}
-              {loading ? "Weaving Storylines..." : "Weave Alternate Draft"}
+              {loading ? "WEAVING ALTERNATE STORYLINES..." : "WEAVE ALTERNATE DRAFT"}
             </button>
           </form>
 
           {/* Result */}
           {result && (
             <div className="space-y-6 animate-scale-in">
-              {/* Narrative sketch (Book Paper Card Box) */}
-              <div className="rounded-2xl border border-gold/30 bg-paper-card p-6 shadow-book relative overflow-hidden border-t-2 border-t-gold">
-                <div className="flex justify-between items-center border-b border-paper-border pb-3 mb-4 font-sans text-[9px] font-bold text-gold uppercase tracking-wider">
-                  <span>Simulated Narrative Sketch</span>
-                  <span className="text-gold">Draft Compiled</span>
+              {/* Typewriter text block for summary */}
+              <div className="rounded-xl border border-gold/30 bg-paper-card p-6 md:p-8 shadow-book-lg relative overflow-hidden border-t-2 border-t-gold">
+                {/* Vintage paper decoration lines */}
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gold/50 via-gold/15 to-gold/50"></div>
+                
+                <div className="flex justify-between items-center border-b border-paper-border pb-4.5 mb-6 font-mono text-[9px] font-bold text-gold uppercase tracking-wider">
+                  <span>SIMULATED NARRATIVE SKETCH</span>
+                  <span>DRAFT COMPILED</span>
                 </div>
                 
-                <p className="text-sm font-serif text-ink-muted leading-relaxed font-medium whitespace-pre-line">
+                <p className="text-sm font-mono text-ink-muted leading-relaxed whitespace-pre-line bg-paper-darker/35 p-6 rounded-lg border border-paper-border/60">
                   {result.summary}
                 </p>
               </div>
 
               {/* Downstream impacts */}
               {result.downstream_impacts.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-display text-base font-bold text-ink tracking-wide flex items-center gap-2">
-                    <span className="font-sans text-[9px] font-bold border border-crimson/20 bg-crimson/5 text-crimson px-2.5 py-0.5 rounded-full">
-                      Narrative Cascades
+                <div className="space-y-4">
+                  <h4 className="font-display text-lg font-bold text-ink tracking-wide flex items-center gap-2">
+                    <span className="font-mono text-[9px] font-bold border border-crimson/30 bg-crimson/5 text-crimson px-2.5 py-0.5 rounded uppercase">
+                      Narrative Cascade
                     </span>
-                    Downstream Impacts Detected
+                    Downstream Impacts Detected ({result.downstream_impacts.length})
                   </h4>
+                  
                   <div className="grid grid-cols-1 gap-4">
                     {result.downstream_impacts.map((impact, i) => (
                       <div
                         key={i}
-                        className="rounded-2xl border border-paper-border bg-paper-card p-5 flex gap-4 items-start hover:border-gold/30 hover:bg-paper-darker transition-all duration-300 glass-panel shadow-sm"
+                        className="rounded-xl border border-paper-border bg-paper-card p-5 flex gap-4 items-start hover:border-gold/30 hover:bg-paper-darker transition-all duration-300 glass-panel shadow-sm"
                       >
-                        <span className="shrink-0 rounded bg-gold/5 border border-gold/20 px-3 py-1 font-sans text-[10px] font-bold text-gold uppercase tracking-wider">
+                        <span className="shrink-0 rounded bg-gold/5 border border-gold/20 px-3 py-1 font-mono text-[9px] font-bold text-gold uppercase tracking-wider">
                           {impact.chapter_id.replace(/_/g, " ")}
                         </span>
-                        <p className="text-sm text-ink-muted leading-relaxed font-serif">{impact.impact}</p>
+                        <p className="text-sm text-ink-muted leading-relaxed font-serif font-light">{impact.impact}</p>
                       </div>
                     ))}
                   </div>
@@ -324,24 +329,25 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
       {activeMode === "conversational" && (
         <div className="space-y-6 font-serif">
           {conversationalStep === 1 && (
-            <div className="rounded-2xl border border-paper-border bg-paper-card p-6 md:p-8 space-y-6 glass-panel shadow-book animate-scale-in">
-              <h3 className="font-display text-lg font-bold text-ink tracking-wide flex items-center gap-2">
-                <span className="font-sans text-[9px] font-bold border border-gold/30 bg-gold/5 text-gold px-2.5 py-0.5 rounded-full">
+            <div className="rounded-2xl border border-paper-border bg-paper-card p-6 md:p-8 space-y-6 glass-panel shadow-book animate-scale-in relative">
+              <div className="absolute top-3 right-3 font-mono text-[8px] text-ink-faded uppercase tracking-widest">NARRATIVE DRAFT ENGINE</div>
+              <h3 className="font-display text-xl font-bold text-ink tracking-wide flex items-center gap-2.5">
+                <span className="font-mono text-[9px] font-bold border border-gold/30 bg-gold/5 text-gold px-2.5 py-0.5 rounded uppercase">
                   Free-form Exploration
                 </span>
                 Describe Alternate Story Trajectory
               </h3>
 
               <div className="space-y-2">
-                <label className="block text-[10px] font-sans font-bold text-ink-muted uppercase tracking-wider">
-                  Describe a change (e.g. What if Elena Voss dies during the skirmish, leaving Marcus without his informant?)
+                <label className="block text-[9px] font-mono font-bold text-ink-muted uppercase tracking-widest">
+                  Describe a scenario change (e.g. What if Elena Voss dies during the skirmish, leaving Marcus without his informant?)
                 </label>
                 <textarea
                   value={conversationalPrompt}
                   onChange={(e) => setConversationalPrompt(e.target.value)}
-                  placeholder="Describe a change..."
+                  placeholder="What if Sherlock Holmes never meets Watson, but instead retains a different detective partner..."
                   rows={4}
-                  className="w-full rounded-xl border border-paper-border bg-paper-card px-4 py-3 text-sm text-ink placeholder-ink-faded focus:outline-none focus:ring-2 focus:ring-gold/35 focus:border-gold transition-all shadow-sm font-sans"
+                  className="w-full rounded-xl border border-paper-border bg-paper-darker px-4 py-3.5 text-sm text-ink placeholder-ink-light focus:outline-none focus:ring-1 focus:ring-gold/30 focus:border-gold transition-all shadow-inner font-sans leading-relaxed"
                 />
               </div>
 
@@ -349,10 +355,10 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
                 type="button"
                 onClick={handlePropose}
                 disabled={!conversationalPrompt.trim() || proposalsLoading}
-                className="flex items-center gap-2.5 rounded-xl bg-crimson hover:bg-crimson-hover px-6 py-3.5 text-xs font-sans font-bold uppercase tracking-wider text-white shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300"
+                className="flex items-center gap-2.5 rounded-xl bg-crimson hover:bg-crimson-hover px-6 py-4 text-xs font-sans font-bold uppercase tracking-widest text-white shadow-book hover:shadow-book-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-500"
               >
                 {proposalsLoading && <Spinner />}
-                {proposalsLoading ? "Weaving..." : "Generate Trajectories"}
+                {proposalsLoading ? "WEAVING TRAJECTORY PROPOSALS..." : "GENERATE TRAJECTORIES"}
               </button>
             </div>
           )}
@@ -361,40 +367,40 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
             <div className="space-y-6 animate-scale-in">
               <div className="rounded-2xl border border-paper-border bg-paper-card p-6 md:p-8 space-y-6 glass-panel shadow-book">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-paper-border pb-4 gap-4">
-                  <h3 className="font-display text-lg font-bold text-ink tracking-wide flex items-center gap-2">
-                    <span className="font-sans text-[9px] font-bold border border-gold/30 bg-gold/5 text-gold px-2.5 py-0.5 rounded-full">
-                      Trajectory Proposals
+                  <h3 className="font-display text-xl font-bold text-ink tracking-wide flex items-center gap-2.5">
+                    <span className="font-mono text-[9px] font-bold border border-gold/30 bg-gold/5 text-gold px-2.5 py-0.5 rounded uppercase">
+                      Weaver Proposals
                     </span>
-                    Trajectory Alternatives
+                    Select Alternate Pathway
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={handleReroll}
                       disabled={proposalsLoading || expandLoading}
-                      className="flex items-center gap-1.5 rounded-lg border border-paper-border hover:border-gold/30 bg-paper-darker px-3.5 py-2 text-xs font-sans font-bold uppercase tracking-wider text-ink-muted hover:text-ink transition-all duration-300"
+                      className="flex items-center gap-1.5 rounded-lg border border-paper-border hover:border-gold/30 bg-paper-darker px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-ink-muted hover:text-ink transition-all duration-300"
                     >
                       {proposalsLoading && <Spinner />}
-                      Regenerate
+                      RE-WEAVE
                     </button>
                     <button
                       onClick={handleAbort}
                       disabled={proposalsLoading || expandLoading}
-                      className="rounded-lg border border-crimson/30 bg-crimson/5 px-3.5 py-2 text-xs font-sans font-bold uppercase tracking-wider text-crimson hover:bg-crimson/10 transition-all duration-300"
+                      className="rounded-lg border border-crimson/30 bg-crimson/5 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-crimson hover:bg-crimson/10 transition-all duration-300"
                     >
                       ABORT
                     </button>
                   </div>
                 </div>
 
-                <p className="text-xs font-sans font-bold text-ink-muted uppercase tracking-wider">
-                  Select a trajectory scenario below to lock in the simulation parameters.
+                <p className="text-[10px] font-mono font-bold text-ink-muted uppercase tracking-widest">
+                  Lock in one of the simulated parameters below:
                 </p>
 
                 {proposalsLoading ? (
-                  <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <div className="flex flex-col items-center justify-center py-14 space-y-3">
                     <Spinner />
-                    <span className="text-xs font-sans text-ink-muted uppercase tracking-wider animate-pulse">
-                      Generating alternate options...
+                    <span className="text-[10px] font-mono text-ink-muted uppercase tracking-widest animate-pulse">
+                      Simulating narrative pathways...
                     </span>
                   </div>
                 ) : (
@@ -407,13 +413,13 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
                           onClick={() => setSelectedProposal(prop)}
                           className={`cursor-pointer rounded-xl border p-5 flex flex-col justify-between space-y-4 transition-all duration-300 ${
                             isSelected
-                              ? "border-gold bg-gold/5 shadow-book"
-                              : "border-paper-border bg-paper-darker/50 hover:border-gold/30 hover:bg-paper-darker text-ink-muted"
+                              ? "border-gold bg-gold/5 shadow-book scale-[1.02]"
+                              : "border-paper-border bg-paper-darker/50 hover:border-gold/35 hover:bg-paper-darker text-ink-muted"
                           }`}
                         >
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <div className="flex justify-between items-start gap-2">
-                              <span className={`font-sans text-[9px] px-2 py-0.5 rounded-full border uppercase font-bold tracking-wider ${
+                              <span className={`font-mono text-[8px] px-2 py-0.5 rounded border uppercase font-bold tracking-wider ${
                                 prop.scope === "character_death"
                                   ? "border-crimson/30 bg-crimson/5 text-crimson"
                                   : prop.scope === "relationship_change"
@@ -422,20 +428,20 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
                               }`}>
                                 {prop.scope.replace(/_/g, " ")}
                               </span>
-                              <span className="font-sans text-[8px] font-bold text-ink-faded uppercase">
+                              <span className="font-mono text-[8px] font-bold text-ink-faded uppercase">
                                 {prop.at_chapter.replace(/_/g, " ")}
                               </span>
                             </div>
-                            <h4 className="font-display text-sm font-bold text-ink tracking-wide">
+                            <h4 className="font-display text-base font-bold text-ink tracking-wide">
                               {prop.title}
                             </h4>
-                            <p className="text-xs text-ink-muted leading-relaxed font-serif">
+                            <p className="text-xs text-ink-muted leading-relaxed font-serif font-light">
                               {prop.teaser}
                             </p>
                           </div>
-                          <div className="border-t border-paper-border pt-3 flex justify-between items-center text-[9px] font-sans font-bold text-ink-faded uppercase tracking-wider">
-                            <span>TARGET:</span>
-                            <span className="text-ink font-bold truncate max-w-[120px]">{prop.target_id}</span>
+                          <div className="border-t border-paper-border/60 pt-3 flex justify-between items-center text-[8px] font-mono font-bold text-ink-faded uppercase tracking-wider">
+                            <span>TARGET DOCK:</span>
+                            <span className="text-ink font-bold truncate max-w-[110px]">{prop.target_id}</span>
                           </div>
                         </div>
                       );
@@ -447,10 +453,10 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
                   <button
                     onClick={handleConfirm}
                     disabled={!selectedProposal || proposalsLoading || expandLoading}
-                    className="flex items-center gap-2.5 rounded-xl bg-crimson hover:bg-crimson-hover px-6 py-3.5 text-xs font-sans font-bold uppercase tracking-wider text-white shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300"
+                    className="flex items-center gap-2.5 rounded-xl bg-crimson hover:bg-crimson-hover px-6 py-4 text-xs font-sans font-bold uppercase tracking-widest text-white shadow-book hover:shadow-book-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-500"
                   >
                     {expandLoading && <Spinner />}
-                    {expandLoading ? "Weaving Storylines..." : "Confirm Trajectory"}
+                    {expandLoading ? "COMPILING CASCSDE IMPACTS..." : "CONFIRM TRAJECTORY"}
                   </button>
                 </div>
               </div>
@@ -460,47 +466,48 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
           {conversationalStep === 3 && conversationalResult && (
             <div className="space-y-6 animate-scale-in">
               <div className="flex justify-between items-center">
-                <h4 className="font-sans text-xs font-bold text-ink-muted uppercase tracking-wider">
-                  Simulation Completed
+                <h4 className="font-mono text-[10px] font-bold text-ink-muted uppercase tracking-widest">
+                  Simulation Finished
                 </h4>
                 <button
                   onClick={handleAbort}
-                  className="rounded-lg border border-crimson/30 bg-crimson/5 px-4 py-2 text-xs font-sans font-bold uppercase tracking-wider text-crimson hover:bg-crimson/10 transition-all duration-300"
+                  className="rounded-lg border border-crimson/30 bg-crimson/5 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-crimson hover:bg-crimson/10 transition-all duration-300"
                 >
-                  ABORT
+                  START NEW SESSION
                 </button>
               </div>
 
               {/* Selected proposal summary context */}
               {selectedProposal && (
-                <div className="rounded-xl border border-paper-border bg-paper-darker p-4 text-xs font-sans text-ink-muted space-y-1 glass-panel">
-                  <div className="flex justify-between font-bold text-ink uppercase tracking-wider">
+                <div className="rounded-xl border border-paper-border bg-paper-card p-5 text-xs font-mono text-ink-muted space-y-1.5 glass-panel">
+                  <div className="flex justify-between font-bold text-ink uppercase tracking-wider pb-2 border-b border-paper-border/60">
                     <span>{selectedProposal.title}</span>
-                    <span className="text-gold font-bold">{selectedProposal.scope.toUpperCase().replace(/_/g, " ")}</span>
+                    <span className="text-gold">{selectedProposal.scope.toUpperCase().replace(/_/g, " ")}</span>
                   </div>
-                  <div>CHAPTER TARGET: {selectedProposal.at_chapter.toUpperCase().replace(/_/g, " ")}</div>
-                  <div>TARGET ENTITY: {selectedProposal.target_id}</div>
+                  <div className="pt-2">TIMELINE THRESHOLD: {selectedProposal.at_chapter.toUpperCase().replace(/_/g, " ")}</div>
+                  <div>BOUND MUTATION OBJECT: {selectedProposal.target_id}</div>
                 </div>
               )}
 
-              {/* Narrative sketch (Book Paper Card Box) */}
-              <div className="rounded-2xl border border-gold/30 bg-paper-card p-6 shadow-book relative overflow-hidden border-t-2 border-t-gold">
-                <div className="flex justify-between items-center border-b border-paper-border pb-3 mb-4 font-sans text-[9px] font-bold text-gold uppercase tracking-wider">
-                  <span>Simulated Narrative Sketch</span>
-                  <span className="text-gold">Draft Compiled</span>
+              {/* Simulated sketch card */}
+              <div className="rounded-xl border border-gold/30 bg-paper-card p-6 md:p-8 shadow-book-lg relative overflow-hidden border-t-2 border-t-gold">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gold/50 via-gold/15 to-gold/50"></div>
+                <div className="flex justify-between items-center border-b border-paper-border pb-4.5 mb-6 font-mono text-[9px] font-bold text-gold uppercase tracking-wider">
+                  <span>SIMULATED NARRATIVE SKETCH</span>
+                  <span>DRAFT COMPILED</span>
                 </div>
                 
-                <p className="text-sm font-serif text-ink-muted leading-relaxed font-medium whitespace-pre-line">
+                <p className="text-sm font-mono text-ink-muted leading-relaxed whitespace-pre-line bg-paper-darker/35 p-6 rounded-lg border border-paper-border/60">
                   {conversationalResult.summary}
                 </p>
               </div>
 
               {/* Downstream impacts */}
               {conversationalResult.downstream_impacts.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-display text-base font-bold text-ink tracking-wide flex items-center gap-2">
-                    <span className="font-sans text-[9px] font-bold border border-crimson/20 bg-crimson/5 text-crimson px-2.5 py-0.5 rounded-full">
-                      Narrative Cascades
+                <div className="space-y-4">
+                  <h4 className="font-display text-lg font-bold text-ink tracking-wide flex items-center gap-2">
+                    <span className="font-mono text-[9px] font-bold border border-crimson/30 bg-crimson/5 text-crimson px-2.5 py-0.5 rounded uppercase">
+                      Narrative Cascade
                     </span>
                     Downstream Impacts Detected
                   </h4>
@@ -508,12 +515,12 @@ export default function WhatIfPanel({ manuscriptId, characters, chapters }: Prop
                     {conversationalResult.downstream_impacts.map((impact, i) => (
                       <div
                         key={i}
-                        className="rounded-2xl border border-paper-border bg-paper-card p-5 flex gap-4 items-start hover:border-gold/30 hover:bg-paper-darker transition-all duration-300 glass-panel shadow-sm"
+                        className="rounded-xl border border-paper-border bg-paper-card p-5 flex gap-4 items-start hover:border-gold/30 hover:bg-paper-darker transition-all duration-300 glass-panel shadow-sm"
                       >
-                        <span className="shrink-0 rounded bg-gold/5 border border-gold/20 px-3 py-1 font-sans text-[10px] font-bold text-gold uppercase tracking-wider">
+                        <span className="shrink-0 rounded bg-gold/5 border border-gold/20 px-3 py-1 font-mono text-[9px] font-bold text-gold uppercase tracking-wider">
                           {impact.chapter_id.replace(/_/g, " ")}
                         </span>
-                        <p className="text-sm text-ink-muted leading-relaxed font-serif">{impact.impact}</p>
+                        <p className="text-sm text-ink-muted leading-relaxed font-serif font-light">{impact.impact}</p>
                       </div>
                     ))}
                   </div>

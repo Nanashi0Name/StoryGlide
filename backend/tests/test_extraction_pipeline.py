@@ -108,3 +108,40 @@ async def test_extraction_pipeline_caching(monkeypatch):
         assert m1_db.status == "done"
         assert m2_db.status == "done"
         assert m1_db.characters_json == m2_db.characters_json
+
+
+@pytest.mark.asyncio
+async def test_extraction_pipeline_error_handling(monkeypatch):
+    monkeypatch.setattr("app.services.extraction_pipeline.AsyncSessionLocal", _TestSession)
+
+    # Insert a new manuscript
+    async with _TestSession() as session:
+        m = Manuscript(filename="error_test.txt", status="processing")
+        session.add(m)
+        await session.commit()
+        await session.refresh(m)
+        manuscript_id = m.id
+
+    # Mock generate_mock_gemini_response to raise an HTTPStatusError
+    import httpx
+    def mock_raise(*args, **kwargs):
+        request = httpx.Request("POST", "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=SECRET_API_KEY_LEAK")
+        response = httpx.Response(503, request=request)
+        raise httpx.HTTPStatusError("503 Service Unavailable", request=request, response=response)
+
+    monkeypatch.setattr("app.services.extraction_pipeline.generate_mock_gemini_response", mock_raise)
+
+    text = "Chapter 1: The Start\nElena Voss was here."
+    await extraction_pipeline.run(manuscript_id, text.encode("utf-8"), "error_test.txt")
+
+    # Verify the results in DB
+    async with _TestSession() as session:
+        from sqlalchemy import select
+        result = await session.execute(
+            select(Manuscript).where(Manuscript.id == manuscript_id)
+        )
+        updated_m = result.scalar_one()
+        assert updated_m.status == "error"
+        # The key should NOT be present in the error message!
+        assert "SECRET_API_KEY_LEAK" not in updated_m.error_message
+        assert "Gemini API service is temporarily unavailable" in updated_m.error_message

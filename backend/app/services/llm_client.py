@@ -22,8 +22,11 @@ def generate_text(
         if not settings.gemini_api_key:
             raise ValueError("GEMINI_API_KEY is not configured.")
         
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_model_id}:generateContent?key={settings.gemini_api_key}"
-        headers = {"Content-Type": "application/json"}
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_model_id}:generateContent"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": settings.gemini_api_key,
+        }
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
@@ -38,18 +41,32 @@ def generate_text(
             if response_schema:
                 payload["generationConfig"]["responseSchema"] = response_schema
 
-        with httpx.Client(timeout=120.0) as client:
-            resp = client.post(url, headers=headers, json=payload)
-            if resp.status_code != 200:
-                logger.error("Gemini API error: %s - %s", resp.status_code, resp.text)
-                resp.raise_for_status()
-            data = resp.json()
-            try:
-                text = data["candidates"][0]["content"]["parts"][0]["text"]
-                return text
-            except (KeyError, IndexError) as e:
-                logger.error("Failed to parse Gemini response: %s", data)
-                raise ValueError("Invalid Gemini API response structure") from e
+        try:
+            with httpx.Client(timeout=120.0) as client:
+                resp = client.post(url, headers=headers, json=payload)
+                if resp.status_code != 200:
+                    logger.error("Gemini API error: Status %s - Body: %s", resp.status_code, resp.text)
+                    if resp.status_code == 503:
+                        raise RuntimeError("Gemini API service is temporarily unavailable. Please try again later.")
+                    elif resp.status_code == 429:
+                        raise RuntimeError("Gemini API rate limit exceeded. Please try again later.")
+                    elif resp.status_code == 400:
+                        raise RuntimeError("Invalid request to Gemini API (possibly due to context size limits).")
+                    elif resp.status_code in (401, 403):
+                        raise RuntimeError("Authentication failed with Gemini API. Please check your API key configuration.")
+                    else:
+                        raise RuntimeError(f"Gemini API error (Status {resp.status_code})")
+                data = resp.json()
+        except httpx.RequestError as e:
+            logger.error("Gemini connection error: %s", str(e))
+            raise RuntimeError("Failed to connect to Gemini API. Please check your network connection.") from e
+
+        try:
+            text = data["candidates"][0]["content"]["parts"][0]["text"]
+            return text
+        except (KeyError, IndexError) as e:
+            logger.error("Failed to parse Gemini response: %s", data)
+            raise ValueError("Invalid Gemini API response structure") from e
 
     else:  # watsonx
         from ibm_watsonx_ai import Credentials
@@ -74,22 +91,37 @@ def generate_embedding(text: str, provider: str) -> list[float]:
         if not settings.gemini_api_key:
             raise ValueError("GEMINI_API_KEY is not configured.")
         
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_embedding_model_id}:embedContent?key={settings.gemini_api_key}"
-        headers = {"Content-Type": "application/json"}
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_embedding_model_id}:embedContent"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": settings.gemini_api_key,
+        }
         payload = {
             "content": {"parts": [{"text": text}]}
         }
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(url, headers=headers, json=payload)
-            if resp.status_code != 200:
-                logger.error("Gemini Embedding API error: %s - %s", resp.status_code, resp.text)
-                resp.raise_for_status()
-            data = resp.json()
-            try:
-                return data["embedding"]["values"]
-            except KeyError as e:
-                logger.error("Failed to parse Gemini embedding: %s", data)
-                raise ValueError("Invalid Gemini embedding response structure") from e
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                resp = client.post(url, headers=headers, json=payload)
+                if resp.status_code != 200:
+                    logger.error("Gemini Embedding API error: Status %s - Body: %s", resp.status_code, resp.text)
+                    if resp.status_code == 503:
+                        raise RuntimeError("Gemini Embedding API service is temporarily unavailable. Please try again later.")
+                    elif resp.status_code == 429:
+                        raise RuntimeError("Gemini Embedding API rate limit exceeded. Please try again later.")
+                    elif resp.status_code in (401, 403):
+                        raise RuntimeError("Authentication failed with Gemini Embedding API. Please check your API key configuration.")
+                    else:
+                        raise RuntimeError(f"Gemini Embedding API error (Status {resp.status_code})")
+                data = resp.json()
+        except httpx.RequestError as e:
+            logger.error("Gemini Embedding connection error: %s", str(e))
+            raise RuntimeError("Failed to connect to Gemini Embedding API. Please check your network connection.") from e
+
+        try:
+            return data["embedding"]["values"]
+        except KeyError as e:
+            logger.error("Failed to parse Gemini embedding: %s", data)
+            raise ValueError("Invalid Gemini embedding response structure") from e
     else:  # watsonx
         from ibm_watsonx_ai import Credentials
         from ibm_watsonx_ai.foundation_models import ModelInference

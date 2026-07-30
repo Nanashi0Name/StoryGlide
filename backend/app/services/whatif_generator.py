@@ -1017,7 +1017,7 @@ def generate_proposals(
         raw_response = llm_client.generate_text(
             prompt=formatted_prompt,
             provider=provider,
-            max_new_tokens=1024,
+            max_new_tokens=8192 if provider == "gemini" else 1024,
             temperature=0.5,
             response_schema=response_schema,
             force_live=True,

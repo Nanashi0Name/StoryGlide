@@ -1,36 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Albert+Sans:ital,wght@0,300..900;1,300..900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-jakarta: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-fraunces: "Fraunces", Georgia, serif;
+  --font-jakarta: "Albert Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-fraunces: "Cormorant Garamond", Georgia, serif;
   --font-cinzel: "Cinzel", Georgia, serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --bg: #FAF7F0; /* Creamy book paper background */
-  --surface: #FFFFFF; /* Pure book page paper */
-  --border: #E4DCD0; /* Vintage binding/parchment line */
-  --text: #1F1E1C; /* Iron gall ink */
-  --text-muted: #5A544F; /* Faded ink */
-  --accent: #8B2635; /* Wax seal burgundy */
-  --accent-glow: rgba(139, 38, 53, 0.08);
+  --font-mono: "Courier Prime", ui-monospace, monospace;
+  --bg: #0B0A09; /* Deep obsidian carbon base */
+  --surface: #121110; /* Heavy leather-bound panel */
+  --border: #24201E; /* Vintage binding line */
+  --text: #F4F1EA; /* Aged ivory ink */
+  --text-muted: #9E968C; /* Faded manuscript graphite */
+  --accent: #E05A67; /* Wax seal crimson */
+  --accent-glow: rgba(224, 90, 103, 0.08);
 }
-
 
 body {
   background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-fraunces), Georgia, serif;
-  line-height: 1.7;
+  line-height: 1.75;
   overflow-x: hidden;
+  letter-spacing: 0.015em;
 }
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -48,28 +48,28 @@ body {
 
 /* Elegant Deckle Edge & Margins */
 .hud-grid {
-  background-size: 40px 40px;
+  background-size: 32px 32px;
   background-image: 
-    linear-gradient(to right, rgba(90, 84, 79, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(90, 84, 79, 0.02) 1px, transparent 1px);
+    linear-gradient(to right, rgba(212, 175, 55, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
 }
 
 .hud-grid-fine {
   background-size: 8px 8px;
   background-image: 
-    linear-gradient(to right, rgba(90, 84, 79, 0.01) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(90, 84, 79, 0.01) 1px, transparent 1px);
+    linear-gradient(to right, rgba(212, 175, 55, 0.01) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(212, 175, 55, 0.01) 1px, transparent 1px);
 }
 
 .glow-orb-primary {
-  filter: blur(140px);
-  background: radial-gradient(circle, rgba(179, 143, 77, 0.08) 0%, rgba(242, 236, 224, 0.4) 60%, transparent 100%);
+  filter: blur(130px);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, rgba(11, 10, 9, 0.8) 70%, transparent 100%);
   pointer-events: none;
 }
 
 .glow-orb-secondary {
-  filter: blur(120px);
-  background: radial-gradient(circle, rgba(139, 38, 53, 0.05) 0%, rgba(242, 236, 224, 0.3) 70%, transparent 100%);
+  filter: blur(110px);
+  background: radial-gradient(circle, rgba(224, 90, 103, 0.04) 0%, rgba(11, 10, 9, 0.8) 70%, transparent 100%);
   pointer-events: none;
 }
 
@@ -77,24 +77,45 @@ body {
 .glass-panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow: 0 4px 20px -2px rgba(42, 35, 25, 0.06), 0 2px 8px -1px rgba(42, 35, 25, 0.03);
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 2px 12px -2px rgba(0, 0, 0, 0.3);
 }
 
 .glass-panel-interactive {
   background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow: 0 4px 20px -2px rgba(42, 35, 25, 0.06), 0 2px 8px -1px rgba(42, 35, 25, 0.03);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 2px 12px -2px rgba(0, 0, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-panel-interactive:hover {
-  background: #FCFAF5;
-  border-color: #B38F4D; /* Antique Gold */
-  box-shadow: 0 12px 30px -4px rgba(42, 35, 25, 0.1), 0 4px 12px -2px rgba(42, 35, 25, 0.05);
+  background: #171514;
+  border-color: rgba(212, 175, 55, 0.3); /* Antique Gold */
+  box-shadow: 0 16px 48px -6px rgba(0, 0, 0, 0.7), 0 4px 16px -2px rgba(0, 0, 0, 0.4);
   transform: translateY(-2px);
 }
 
-/* Classic typewriter scanlines - turned into elegant deckle-edge shadow */
+/* Decorative vintage divider */
+.vintage-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--border);
+  font-family: var(--font-cinzel), serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  margin: 2rem 0;
+  opacity: 0.6;
+}
+.vintage-divider::before,
+.vintage-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(to right, transparent, var(--border), transparent);
+}
+
+/* Typewriter scanlines - turned into elegant deckle-edge shadow */
 .scanlines {
   position: relative;
   overflow: hidden;
@@ -105,7 +126,7 @@ body {
   display: block;
   position: absolute;
   top: 0; left: 0; bottom: 0; right: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%);
   z-index: 10;
   pointer-events: none;
 }
@@ -121,4 +142,3 @@ body {
   animation: blink 1.1s infinite;
   color: var(--accent);
 }
-

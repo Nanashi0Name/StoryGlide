@@ -514,8 +514,32 @@ async def run(manuscript_id: str, file_bytes: bytes, filename: str) -> None:
         except Exception as exc:  # noqa: BLE001
             logger.exception("Pipeline: manuscript %s failed", manuscript_id)
             manuscript.status = "error"
-            manuscript.error_message = str(exc)[:500]
+            manuscript.error_message = _get_friendly_error_message(exc)[:500]
             await db.commit()
+
+
+def _get_friendly_error_message(exc: Exception) -> str:
+    # If it's a known user-friendly exception or subclass of ValueError/RuntimeError we raised
+    if isinstance(exc, (ValueError, RuntimeError)):
+        return str(exc)
+    
+    # Check for httpx exceptions that somehow bubbled up
+    import httpx
+    if isinstance(exc, httpx.HTTPStatusError):
+        status_code = exc.response.status_code
+        if status_code == 503:
+            return "Gemini API service is temporarily unavailable. Please try again later."
+        elif status_code == 429:
+            return "Gemini API rate limit exceeded. Please try again later."
+        elif status_code == 400:
+            return "Invalid request to Gemini API (possibly due to context size limits)."
+        elif status_code in (401, 403):
+            return "Authentication failed with Gemini API. Please check your API key configuration."
+        return f"Gemini API returned status code {status_code}."
+    elif isinstance(exc, httpx.RequestError):
+        return "Failed to connect to Gemini API. Please check your network connection."
+        
+    return "An unexpected error occurred during manuscript analysis. Please verify your file format and try again."
 
 
 async def _get_manuscript(db: AsyncSession, manuscript_id: str) -> Manuscript | None:

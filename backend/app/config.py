@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # Gemini
     gemini_api_key: str = ""
-    gemini_model_id: str = "gemini-3.5-flash"
+    gemini_model_id: str = "gemini-3.6-flash"
     gemini_embedding_model_id: str = "text-embedding-004"
 
     # watsonx.ai (Optional fallback)

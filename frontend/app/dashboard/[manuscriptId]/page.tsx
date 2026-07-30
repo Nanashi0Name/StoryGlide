@@ -184,7 +184,7 @@ export default function DashboardPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex-1 min-w-[155px] rounded-xl px-4 py-3 text-left transition-all duration-300 relative overflow-hidden ${
                     isActive
-                      ? "bg-paper-card border border-crimson/35 text-ink shadow-book"
+                      ? "bg-paper-card border border-gold/40 text-ink shadow-book"
                       : "border border-transparent text-ink-muted hover:text-ink hover:bg-paper-darker/50"
                   }`}
                 >
@@ -207,7 +207,7 @@ export default function DashboardPage() {
                   </div>
                   {/* Subtle active border light */}
                   {isActive && (
-                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-crimson to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent"></div>
                   )}
                 </button>
               );

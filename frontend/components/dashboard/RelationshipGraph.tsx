@@ -53,11 +53,11 @@ const STYLESHEET: any[] = [
   {
     selector: "node",
     style: {
-      "background-color": "#FFFFFF",
+      "background-color": "#121110", // Paper card dark
       "border-width": 2,
-      "border-color": "#B38F4D",
+      "border-color": "#D4AF37", // Gold accent
       "label": "data(label)",
-      "color": "#1F1E1C",
+      "color": "#F4F1EA", // Ivory ink text
       "font-size": "11px",
       "font-family": "var(--font-fraunces), Georgia, serif",
       "text-valign": "center",
@@ -73,10 +73,10 @@ const STYLESHEET: any[] = [
   {
     selector: "node:selected",
     style: {
-      "background-color": "#B38F4D",
+      "background-color": "#D4AF37", // Gold
       "border-width": 2,
-      "border-color": "#1F1E1C",
-      "color": "#FFFFFF",
+      "border-color": "#F4F1EA", // Ivory
+      "color": "#0B0A09", // Paper base
       "font-weight": "bold",
     } as cytoscape.Css.Node,
   },
@@ -84,16 +84,16 @@ const STYLESHEET: any[] = [
     selector: "edge",
     style: {
       "width": 2,
-      "line-color": "#B8B2A9",
-      "target-arrow-color": "#B8B2A9",
+      "line-color": "#4E4840", // Light ink line
+      "target-arrow-color": "#4E4840",
       "target-arrow-shape": "triangle",
       "curve-style": "bezier",
       "label": "data(label)",
       "font-size": "8px",
       "font-family": "var(--font-jakarta), system-ui, sans-serif",
-      "color": "#5A544F",
+      "color": "#9E968C", // Muted ink
       "text-rotation": "autorotate",
-      "text-background-color": "#FAF7F0",
+      "text-background-color": "#121110", // Overlay on card background
       "text-background-opacity": 0.95,
       "text-background-padding": "3px",
     } as cytoscape.Css.Edge,
@@ -101,15 +101,15 @@ const STYLESHEET: any[] = [
   {
     selector: 'edge[sentiment = "hostile"]',
     style: {
-      "line-color": "#8B2635",
-      "target-arrow-color": "#8B2635",
+      "line-color": "#E05A67", // Crimson
+      "target-arrow-color": "#E05A67",
     } as cytoscape.Css.Edge,
   },
   {
     selector: 'edge[sentiment = "friendly"]',
     style: {
-      "line-color": "#4B6B58",
-      "target-arrow-color": "#4B6B58",
+      "line-color": "#6B9B7E", // Sage
+      "target-arrow-color": "#6B9B7E",
     } as cytoscape.Css.Edge,
   },
 ];
@@ -126,7 +126,7 @@ export default function RelationshipGraph({ characters }: Props) {
   const elements = buildElements(characters);
 
   return (
-    <div className="rounded-2xl border border-paper-border overflow-hidden bg-[#FAF7F0] relative shadow-book" style={{ height: 480 }}>
+    <div className="rounded-2xl border border-paper-border overflow-hidden bg-[#121110] relative shadow-book" style={{ height: 480 }}>
       {/* Subtle grid pattern overlay */}
       <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none z-10"></div>
       <div className="absolute top-3 left-4 font-sans text-[9px] font-bold text-ink-muted uppercase tracking-wider z-10">
@@ -137,7 +137,7 @@ export default function RelationshipGraph({ characters }: Props) {
         elements={elements}
         stylesheet={STYLESHEET}
         layout={{ name: "cose", animate: true, padding: 50, nodeOverlap: 20 } as any}
-        style={{ width: "100%", height: "100%", background: "#FAF7F0" }}
+        style={{ width: "100%", height: "100%", background: "#121110" }}
         cy={(cy) => {
           if ((cy as any)._storyglide_initialized) return;
           (cy as any)._storyglide_initialized = true;
@@ -199,15 +199,15 @@ export default function RelationshipGraph({ characters }: Props) {
       
       <div className="absolute bottom-0 left-0 right-0 flex gap-4 px-4 py-3.5 bg-paper-darker/95 backdrop-blur-sm border-t border-paper-border text-[10px] font-sans font-bold uppercase tracking-wider text-ink-muted z-10">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#8B2635" }} />
+          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#E05A67" }} />
           HOSTILE
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#4B6B58" }} />
+          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#6B9B7E" }} />
           FRIENDLY
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#B8B2A9" }} />
+          <span className="inline-block h-1.5 w-4 rounded-sm" style={{ background: "#6E675E" }} />
           NEUTRAL
         </span>
         <span className="ml-auto text-[9px] text-ink-faded lowercase">
